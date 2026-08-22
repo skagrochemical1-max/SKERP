@@ -35,7 +35,7 @@ async function loadDashboard() {
       .limit(5);
     if (recErr) throw recErr;
 
-    const { data: stockData, error: stockErr } = await window.dbClient.from('products').select('name, stock, unit, reorder_level');
+    const { data: stockData, error: stockErr } = await window.dbClient.from('products').select('name, unit, reorder_level');
     if (stockErr) throw stockErr;
     
     const stockAlerts = (stockData || [])
