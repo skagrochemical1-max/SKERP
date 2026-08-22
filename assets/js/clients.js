@@ -64,7 +64,7 @@ function renderTable(data) {
   if (!tbody) return;
   document.getElementById('total-info').textContent = `${data.length} client${data.length !== 1 ? 's' : ''}`;
   if (!data.length) {
-    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><h3>No clients found</h3><p>Add your first client to start selling.</p></div></td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="8"><div class="empty-state"><h3>No clients found</h3><p>Add your first client to start selling.</p></div></td></tr>`;
     return;
   }
   tbody.innerHTML = data.map(c => `<tr>

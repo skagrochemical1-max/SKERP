@@ -88,7 +88,7 @@ function renderTable(data) {
   if (!tbody) return;
   document.getElementById('total-info').textContent = `${data.length} purchase${data.length !== 1 ? 's' : ''}`;
   if (!data.length) {
-    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><h3>No purchases found</h3></div></td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="10"><div class="empty-state"><h3>No purchases found</h3></div></td></tr>`;
     return;
   }
   tbody.innerHTML = data.map(p => {

@@ -49,7 +49,7 @@ function renderTable(data) {
   if (!tbody) return;
   document.getElementById('total-info').textContent = `${data.length} supplier${data.length !== 1 ? 's' : ''}`;
   if (!data.length) {
-    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><h3>No suppliers found</h3><p>Manage your raw material sources here.</p></div></td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="7"><div class="empty-state"><h3>No suppliers found</h3><p>Manage your raw material sources here.</p></div></td></tr>`;
     return;
   }
   tbody.innerHTML = data.map(s => `<tr>

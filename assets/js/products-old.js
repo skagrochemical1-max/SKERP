@@ -1,4 +1,4 @@
-ï»¿/* products.js */
+/* products.js */
 let allProducts = [], editingProductId = null;
 let productFormStep = 1;
 
@@ -38,15 +38,15 @@ function renderTable(data) {
   if (!tbody) return;
   document.getElementById('total-info').textContent = `${data.length} product${data.length !== 1 ? 's' : ''}`;
   if (!data.length) {
-    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><h3>No products found</h3><p>Start by adding finished goods here.</p></div></td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="8"><div class="empty-state"><h3>No products found</h3><p>Start by adding finished goods here.</p></div></td></tr>`;
     return;
   }
   tbody.innerHTML = data.map(p => `<tr>
     <td><input type="checkbox" class="row-check" value="${p.id}"></td>
     <td class="cell-bold">${p.name}</td>
-    <td class="cell-mono">${p.batch_no || 'â€”'}</td>
-    <td>${p.brand || 'â€”'}</td>
-    <td><span class="badge badge-purple">${p.category || 'â€”'}</span></td>
+    <td class="cell-mono">${p.batch_no || '—'}</td>
+    <td>${p.brand || '—'}</td>
+    <td><span class="badge badge-purple">${p.category || '—'}</span></td>
     <td>${UTILS.fmtCurrency(p.purchase_price || 0)}</td>
     <td>${UTILS.fmtCurrency(p.sell_price || 0)}</td>
     <td><div class="row-actions">

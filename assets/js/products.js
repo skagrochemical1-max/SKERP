@@ -264,7 +264,7 @@ function renderProductsTable(data) {
   const filtered = getFilteredProducts(data);
   document.getElementById('total-info').textContent = `${filtered.length} product${filtered.length !== 1 ? 's' : ''}`;
   if (!filtered.length) {
-    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><h3>No products found</h3><p>Start by adding finished goods here.</p></div></td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="9"><div class="empty-state"><h3>No products found</h3><p>Start by adding finished goods here.</p></div></td></tr>`;
     return;
   }
   tbody.innerHTML = filtered.map(p => {
@@ -315,7 +315,7 @@ function renderPackagingTable(data) {
     `${groups.length} product${groups.length !== 1 ? 's' : ''} · ${totalVariants} variant${totalVariants !== 1 ? 's' : ''}`;
 
   if (!groups.length) {
-    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><h3>No packaging variants</h3><p>Add packaging options to products.</p></div></td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="6"><div class="empty-state"><h3>No packaging variants</h3><p>Add packaging options to products.</p></div></td></tr>`;
     return;
   }
 

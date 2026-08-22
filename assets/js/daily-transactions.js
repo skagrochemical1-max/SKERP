@@ -175,7 +175,7 @@ function renderTable(data) {
   document.getElementById('total-info').textContent = `${filtered.length} entr${filtered.length === 1 ? 'y' : 'ies'}`;
 
   if (!filtered.length) {
-    tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><h3>No entries found</h3></div></td></tr>';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="7"><div class="empty-state"><h3>No entries found</h3></div></td></tr>';
     updateStats(filtered);
     return;
   }
