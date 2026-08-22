@@ -682,15 +682,48 @@ async function openEdit(type, id) {
 
 async function saveInventoryItemAPI(payload) {
   try {
+    const openingQty = parseFloat(payload.opening_qty) || 0;
+    const openingCost = parseFloat(payload.opening_cost) || 0;
+    const openingBatchNo = payload.opening_batch_no || '';
+    
+    // Remove fields that do not exist in inventory_items schema
+    delete payload.opening_qty;
+    delete payload.opening_cost;
+    delete payload.opening_batch_no;
+
+    // Set initial stock if creating new item
+    if (!editingItemId && openingQty) {
+      payload.stock = openingQty;
+    }
+
+    let savedId = editingItemId;
+
     if (editingItemId) {
       const { error } = await window.dbClient.from('inventory_items').update(payload).eq('id', editingItemId);
       if (error) throw error;
-      return { success: true };
     } else {
-      const { error } = await window.dbClient.from('inventory_items').insert([payload]);
+      const { data, error } = await window.dbClient.from('inventory_items').insert([payload]).select();
       if (error) throw error;
-      return { success: true };
+      savedId = data[0].id;
     }
+
+    // Add opening batch record if provided
+    if (!editingItemId && openingQty > 0) {
+      const batchPayload = {
+        item_id: savedId,
+        item_name: payload.name,
+        item_type: 'Inventory',
+        batch_no: openingBatchNo || ('OPEN-' + Date.now()),
+        purchase_price: openingCost,
+        initial_qty: openingQty,
+        current_qty: openingQty,
+        unit: payload.unit || ''
+      };
+      // We do not await/block heavily on this failing since item is already saved
+      await window.dbClient.from('stock_batches').insert([batchPayload]);
+    }
+
+    return { success: true };
   } catch (err) {
     throw err;
   }
