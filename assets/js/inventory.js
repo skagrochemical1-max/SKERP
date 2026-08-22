@@ -18,7 +18,7 @@ async function loadInventory() {
     await loadMasterOptions();
     await loadCatalogProductSuggestions();
 
-    const { data: items, error } = await window.dbClient.from('inventory').select('*');
+    const { data: items, error } = await window.dbClient.from('inventory_items').select('*');
     if (error) throw error;
     
     allInventory = items.map(ii => {
@@ -192,7 +192,7 @@ async function deleteInventoryItem(itemType, id) {
   let message = 'Delete this inventory item?';
   APP.showConfirm(message, async () => {
     try {
-      const { error } = await window.dbClient.from('inventory').delete().eq('id', id);
+      const { error } = await window.dbClient.from('inventory_items').delete().eq('id', id);
       if (error) throw error;
       
       APP.showToast('Inventory item deleted!', 'success');
@@ -537,7 +537,7 @@ function openAddOther() {
 async function openEdit(type, id) {
   editingItemId = id;
   try {
-    const { data: itData, error } = await window.dbClient.from('inventory').select('*').eq('id', id).single();
+    const { data: itData, error } = await window.dbClient.from('inventory_items').select('*').eq('id', id).single();
     if (error) throw error;
     const it = itData;
 
@@ -683,11 +683,11 @@ async function openEdit(type, id) {
 async function saveInventoryItemAPI(payload) {
   try {
     if (editingItemId) {
-      const { error } = await window.dbClient.from('inventory').update(payload).eq('id', editingItemId);
+      const { error } = await window.dbClient.from('inventory_items').update(payload).eq('id', editingItemId);
       if (error) throw error;
       return { success: true };
     } else {
-      const { error } = await window.dbClient.from('inventory').insert([payload]);
+      const { error } = await window.dbClient.from('inventory_items').insert([payload]);
       if (error) throw error;
       return { success: true };
     }

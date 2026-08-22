@@ -1262,3 +1262,9 @@ body { overflow-x: hidden; }
     gap: 8px !important;
   }
 }
+@media (max-width: 768px) { tr.empty-row { display: block !important; width: 100% !important; border: none !important; padding: 0 !important; }
+  tr.empty-row td { display: block !important; width: 100% !important; padding: 0 !important; }
+  tr.empty-row td::before { content: none !important; }
+  tr.empty-row .empty-state { width: 100%; box-sizing: border-box; }
+}
+

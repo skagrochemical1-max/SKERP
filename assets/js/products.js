@@ -727,9 +727,9 @@ async function saveProduct() {
       sell_price: productSellPrice,
       gst: defaultGst,
       description: d.description || '',
-      cibrc_reg_no: d.cibrc_reg_no || '',
-      toxicity_triangle: d.toxicity_triangle || '',
-      antidote_statement: d.antidote_statement || ''
+      // cibrc_reg_no: d.cibrc_reg_no || '',
+      // toxicity_triangle: d.toxicity_triangle || '',
+      // antidote_statement: d.antidote_statement || ''
     };
 
     let savedProductId = editingProductId;

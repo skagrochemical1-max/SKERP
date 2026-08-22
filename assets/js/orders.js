@@ -137,7 +137,7 @@ function renderTable(data) {
   if (!tbody) return;
   document.getElementById('total-info').textContent = `${data.length} order${data.length !== 1 ? 's' : ''}`;
   if (!data.length) {
-    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><h3>No orders found</h3><p>Create your first order.</p></div></td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="9"><div class="empty-state"><h3>No orders found</h3><p>Create your first order.</p></div></td></tr>`;
     return;
   }
   tbody.innerHTML = data.map(o => {
@@ -177,7 +177,7 @@ function renderOrderItemsDetailTable(data) {
   const totalInfo = document.getElementById('items-total-info');
   if (totalInfo) totalInfo.textContent = `${data.length} item${data.length !== 1 ? 's' : ''}`;
   if (!data.length) {
-    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><h3>No items found</h3><p>No order items match the selected criteria.</p></div></td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="10"><div class="empty-state"><h3>No items found</h3><p>No order items match the selected criteria.</p></div></td></tr>`;
     return;
   }
 
