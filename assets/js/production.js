@@ -1,7 +1,8 @@
-/* production.js - Handles Production Batches (Stock Additions) */
+/* production.js - Handles Production Batches and Inventory Synchronization */
 
 let allProductions = [];
 let cachedProducts = [];
+let cachedInventory = [];
 let editingProductionId = null;
 let currentLines = [];
 
@@ -9,18 +10,23 @@ async function loadData() {
   try {
     updatePageDebug('Loading...', '#10B981');
     
-    // Fetch Products (Finished Goods)
-    const { data: prodData } = await window.dbClient.from('products').select('*');
+    // Fetch Products (Finished Goods) for top-level record
+    const { data: prodData } = await window.dbClient.from('products').select('id, name');
     cachedProducts = prodData || [];
+    
+    // Fetch Inventory (Raw Materials & Finished Goods) for line items
+    const { data: invData } = await window.dbClient.from('inventory_items').select('id, name, unit');
+    cachedInventory = invData || [];
     
     // Fetch Production Batches
     const { data: prodBatches, error } = await window.dbClient.from('production_batches')
-      .select('*')
+      .select('*, production_ingredients(*)')
       .order('date', { ascending: false });
       
     if (error) throw error;
     allProductions = prodBatches || [];
     
+    populateProductSelect();
     renderTable(allProductions);
     updatePageDebug('Ready (' + allProductions.length + ')', '#10B981');
   } catch (err) {
@@ -33,6 +39,15 @@ async function loadData() {
 function updatePageDebug(text, color) {
   const el = document.getElementById('debug-page-status');
   if (el) { el.textContent = 'Page: ' + text; if (color) el.style.color = color; }
+}
+
+function populateProductSelect() {
+  const select = document.getElementById('product-select');
+  if (!select) return;
+  if (select._ussInstance) select._ussInstance.destroy();
+  select.innerHTML = '<option value="">Select Product...</option>' + 
+    cachedProducts.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+  if (window.UniversalSearchSelect) new UniversalSearchSelect(select);
 }
 
 function renderTable(data) {
@@ -54,6 +69,7 @@ function renderTable(data) {
       <td>${b.quantity_produced || 0}</td>
       <td>
         <div class="action-btns">
+          <button class="icon-btn" onclick="editProduction(${b.id})" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
           <button class="icon-btn delete-btn" onclick="deleteProduction(${b.id})" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
         </div>
       </td>
@@ -68,13 +84,44 @@ function openProductionModal() {
   document.getElementById('production-form').reset();
   document.querySelector('[name="date"]').value = UTILS.todayStr();
   
+  const select = document.getElementById('product-select');
+  if (select._ussInstance) select._ussInstance.destroy();
+  select.value = "";
+  if (window.UniversalSearchSelect) new UniversalSearchSelect(select);
+  
   currentLines = [];
-  addIngredientRow(); // Start with one empty row
+  addIngredientRow();
+  APP.openModal('production-modal');
+}
+
+async function editProduction(id) {
+  const b = allProductions.find(x => x.id === id);
+  if (!b) return;
+  
+  editingProductionId = id;
+  UTILS.populateForm('production-form', b);
+  
+  const select = document.getElementById('product-select');
+  if (select._ussInstance) select._ussInstance.destroy();
+  if (window.UniversalSearchSelect) new UniversalSearchSelect(select);
+  
+  currentLines = (b.production_ingredients || []).map(ing => {
+    // Determine action from quantity_used: negative means INCREASE, positive means DECREASE
+    const isIncrease = ing.quantity_used < 0;
+    return {
+      id: ing.id,
+      inventory_id: ing.inventory_id,
+      quantity: Math.abs(ing.quantity_used),
+      action: isIncrease ? 'INCREASE' : 'DECREASE'
+    };
+  });
+  
+  renderIngredientsTable();
   APP.openModal('production-modal');
 }
 
 function addIngredientRow() {
-  currentLines.push({ id: 'new-' + Date.now(), product_id: '', quantity: 1, unit_price: 0 });
+  currentLines.push({ id: 'new-' + Date.now(), inventory_id: '', quantity: 0, action: 'DECREASE' });
   renderIngredientsTable();
 }
 
@@ -85,14 +132,7 @@ function removeIngredientRow(idx) {
 
 function updateIngredient(idx, field, value) {
   currentLines[idx][field] = value;
-  
-  if (field === 'product_id') {
-    const prod = cachedProducts.find(p => p.id == value);
-    if (prod) {
-      currentLines[idx].unit_price = parseFloat(prod.purchase_price) || 0;
-    }
-  }
-  renderIngredientsTable();
+  renderIngredientsTable(); // Re-render for unit updates if needed
 }
 
 function renderIngredientsTable() {
@@ -100,35 +140,33 @@ function renderIngredientsTable() {
   if (!tbody) return;
   
   if (currentLines.length === 0) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="5" style="text-align:center; padding:15px; color:var(--text-muted); font-size:13px;">No items added yet.</td></tr>';
-    document.getElementById('production-total-display').textContent = '₹0.00';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="4" style="text-align:center; padding:15px; color:var(--text-muted); font-size:13px;">No items added.</td></tr>';
     return;
   }
   
-  const options = '<option value="">Select Product</option>' + cachedProducts.map(i => `<option value="${i.id}">${i.name}</option>`).join('');
-  
-  let totalCost = 0;
+  const options = '<option value="">Select Inventory Item</option>' + cachedInventory.map(i => `<option value="${i.id}">${i.name}</option>`).join('');
   
   tbody.innerHTML = currentLines.map((line, idx) => {
-    const qty = parseFloat(line.quantity) || 0;
-    const price = parseFloat(line.unit_price) || 0;
-    const lineTotal = qty * price;
-    totalCost += lineTotal;
+    const inv = cachedInventory.find(i => i.id == line.inventory_id);
+    const unitLabel = inv ? inv.unit : '';
     
     return `<tr>
       <td>
-        <select class="form-input uss-product-select" style="padding: 6px;" onchange="updateIngredient(${idx}, 'product_id', this.value)">
-          ${options.replace(`value="${line.product_id}"`, `value="${line.product_id}" selected`)}
+        <select class="form-input uss-inventory-select" style="padding: 6px;" onchange="updateIngredient(${idx}, 'inventory_id', this.value)">
+          ${options.replace(`value="${line.inventory_id}"`, `value="${line.inventory_id}" selected`)}
         </select>
       </td>
       <td>
-        <input type="number" class="form-input" style="padding: 6px;" min="0.01" step="0.01" value="${line.quantity || ''}" onchange="updateIngredient(${idx}, 'quantity', this.value)">
+        <div style="display: flex; align-items: center; gap: 5px;">
+          <input type="number" class="form-input" style="padding: 6px; width: 80px;" min="0.01" step="0.01" value="${line.quantity || ''}" onchange="updateIngredient(${idx}, 'quantity', this.value)">
+          <span style="font-size: 11px; color: var(--text-muted);">${unitLabel}</span>
+        </div>
       </td>
       <td>
-        <input type="number" class="form-input" style="padding: 6px;" min="0" step="0.01" value="${line.unit_price || ''}" onchange="updateIngredient(${idx}, 'unit_price', this.value)">
-      </td>
-      <td style="font-family: monospace; font-weight: bold; padding-top: 10px;">
-        ₹${lineTotal.toFixed(2)}
+        <select class="form-input" style="padding: 6px; font-weight: bold; color: ${line.action === 'INCREASE' ? 'var(--success)' : 'var(--danger)'};" onchange="updateIngredient(${idx}, 'action', this.value)">
+          <option value="DECREASE" ${line.action === 'DECREASE' ? 'selected' : ''}>DECREASE</option>
+          <option value="INCREASE" ${line.action === 'INCREASE' ? 'selected' : ''}>INCREASE</option>
+        </select>
       </td>
       <td>
         <button type="button" class="icon-btn delete-btn" style="margin-top: 4px;" onclick="removeIngredientRow(${idx})">
@@ -138,11 +176,8 @@ function renderIngredientsTable() {
     </tr>`;
   }).join('');
   
-  document.getElementById('production-total-display').textContent = `₹${totalCost.toFixed(2)}`;
-  
-  // Re-init search selects
   setTimeout(() => {
-    document.querySelectorAll('.uss-product-select').forEach(sel => {
+    document.querySelectorAll('.uss-inventory-select').forEach(sel => {
        if (sel._ussInstance) sel._ussInstance.destroy();
        if (window.UniversalSearchSelect) new UniversalSearchSelect(sel);
     });
@@ -151,75 +186,86 @@ function renderIngredientsTable() {
 
 async function saveProduction() {
   const d = UTILS.getFormData('production-form');
+  if (!d.product_id) { APP.showToast('Product is required', 'error'); return; }
+  const qtyProduced = parseFloat(d.quantity_produced);
+  if (!qtyProduced || qtyProduced <= 0) { APP.showToast('Valid quantity is required', 'error'); return; }
   
-  const validLines = currentLines.filter(i => i.product_id && parseFloat(i.quantity) > 0);
-  if (validLines.length === 0) {
-    APP.showToast('Add at least one valid product line', 'error'); 
-    return;
-  }
+  const validLines = currentLines.filter(i => i.inventory_id && parseFloat(i.quantity) > 0);
   
   try {
-    for (const line of validLines) {
-      const prodObj = cachedProducts.find(p => p.id == line.product_id);
-      const qty = parseFloat(line.quantity) || 0;
-      const price = parseFloat(line.unit_price) || 0;
-      const batchNo = 'PRD-' + Date.now() + Math.floor(Math.random() * 100);
-      
-      const payload = {
-        product_id: parseInt(line.product_id),
-        product_name: prodObj ? prodObj.name : '',
-        batch_no: batchNo,
-        formula_name: 'Direct Entry',
-        quantity_produced: qty,
-        date: d.date,
-        notes: d.notes || ''
-      };
-      
-      const { data, error } = await window.dbClient.from('production_batches').insert([payload]).select();
-      if (error) throw error;
-      
-      // Sync logic: Check if this product exists in inventory_items by name
-      const { data: matchingInv } = await window.dbClient.from('inventory_items').select('*').ilike('name', prodObj.name);
-      
-      if (matchingInv && matchingInv.length > 0) {
-        const invItem = matchingInv[0];
-        const newStock = (parseFloat(invItem.stock) || 0) + qty;
-        
-        // Update inventory_items stock
-        await window.dbClient.from('inventory_items').update({ stock: newStock }).eq('id', invItem.id);
-        
-        // Add to stock_batches as Inventory so it appears in the dashboard properly
-        const stockBatchPayload = {
-          item_id: invItem.id,
-          item_name: invItem.name,
-          item_type: 'Inventory',
-          batch_no: batchNo,
-          purchase_price: price,
-          initial_qty: qty,
-          current_qty: qty,
-          unit: invItem.unit || 'Kg',
-          created_at: new Date(d.date || new Date()).toISOString()
-        };
-        await window.dbClient.from('stock_batches').insert([stockBatchPayload]);
-        
-      } else {
-        // Add finished good to stock_batches as Catalog
-        const stockBatchPayload = {
-          item_id: prodObj.id,
-          item_name: prodObj.name,
-          item_type: 'Catalog',
-          batch_no: batchNo,
-          purchase_price: price,
-          initial_qty: qty,
-          current_qty: qty,
-          unit: prodObj.unit || 'Kg',
-          created_at: new Date(d.date || new Date()).toISOString()
-        };
-        await window.dbClient.from('stock_batches').insert([stockBatchPayload]);
+    // 1. Validate Stock for DECREASE
+    const { data: currentStock } = await window.dbClient.from('inventory_items').select('id, name, stock');
+    if (currentStock) {
+      for (const line of validLines) {
+        if (line.action === 'DECREASE') {
+          const invItem = currentStock.find(i => i.id == line.inventory_id);
+          const reqQty = parseFloat(line.quantity);
+          const availQty = parseFloat(invItem?.stock || 0);
+          
+          let oldQty = 0;
+          if (editingProductionId) {
+             const oldBatch = allProductions.find(x => x.id === editingProductionId);
+             if (oldBatch && oldBatch.production_ingredients) {
+                const oldIng = oldBatch.production_ingredients.find(oi => oi.inventory_id == line.inventory_id && oi.quantity_used > 0);
+                if (oldIng) oldQty = oldIng.quantity_used;
+             }
+          }
+          
+          if (reqQty > (availQty + oldQty)) {
+            APP.showToast(`Not enough stock for ${invItem ? invItem.name : 'item'}. Required: ${reqQty}, Available: ${availQty + oldQty}`, 'error');
+            return;
+          }
+        }
       }
     }
     
-    APP.showToast('Production recorded successfully!', 'success');
+    const prodObj = cachedProducts.find(p => p.id == d.product_id);
+    const finalBatchNo = d.batch_no || ('B-' + Date.now());
+    
+    const payload = {
+      product_id: parseInt(d.product_id),
+      product_name: prodObj ? prodObj.name : '',
+      batch_no: finalBatchNo,
+      formula_name: d.formula_name || '',
+      quantity_produced: qtyProduced,
+      date: d.date,
+      notes: d.notes || ''
+    };
+    
+    let savedId = editingProductionId;
+    
+    if (editingProductionId) {
+      const { error } = await window.dbClient.from('production_batches').update(payload).eq('id', editingProductionId);
+      if (error) throw error;
+      
+      // Delete old ingredients (Trigger restores stock automatically)
+      await window.dbClient.from('production_ingredients').delete().eq('production_id', editingProductionId);
+    } else {
+      const { data, error } = await window.dbClient.from('production_batches').insert([payload]).select();
+      if (error) throw error;
+      savedId = data[0].id;
+    }
+    
+    // Insert new ingredients (Trigger adjusts stock automatically)
+    if (validLines.length > 0) {
+      const ingPayload = validLines.map(line => {
+        const invObj = cachedInventory.find(i => i.id == line.inventory_id);
+        const qty = parseFloat(line.quantity) || 0;
+        // If action is INCREASE, we pass a negative quantity so the DB trigger ADDS to stock
+        const finalQtyUsed = line.action === 'INCREASE' ? -qty : qty;
+        
+        return {
+          production_id: savedId,
+          inventory_id: parseInt(line.inventory_id),
+          inventory_name: invObj ? invObj.name : '',
+          quantity_used: finalQtyUsed
+        };
+      });
+      const { error: ingErr } = await window.dbClient.from('production_ingredients').insert(ingPayload);
+      if (ingErr) throw ingErr;
+    }
+    
+    APP.showToast('Production recorded & inventory updated!', 'success');
     APP.closeModal('production-modal');
     loadData();
     
@@ -230,29 +276,14 @@ async function saveProduction() {
 }
 
 async function deleteProduction(id) {
-  const b = allProductions.find(x => x.id === id);
-  APP.showConfirm('Delete this production batch and remove it from inventory?', async () => {
+  APP.showConfirm('Delete this production batch? All inventory changes will be reversed.', async () => {
     try {
-      if (b && b.batch_no) {
-        const { data: batches } = await window.dbClient.from('stock_batches').select('*').eq('batch_no', b.batch_no);
-        if (batches && batches.length > 0) {
-          for (const batch of batches) {
-            if (batch.item_type === 'Inventory') {
-              const { data: invItem } = await window.dbClient.from('inventory_items').select('stock').eq('id', batch.item_id).single();
-              if (invItem) {
-                const newStock = (parseFloat(invItem.stock) || 0) - batch.initial_qty;
-                await window.dbClient.from('inventory_items').update({ stock: newStock }).eq('id', batch.item_id);
-              }
-            }
-            await window.dbClient.from('stock_batches').delete().eq('id', batch.id);
-          }
-        }
-      }
-      
+      // Deleting production_batches cascades to production_ingredients.
+      // The DB trigger on production_ingredients DELETE will automatically restore stock!
       const { error } = await window.dbClient.from('production_batches').delete().eq('id', id);
       if (error) throw error;
       
-      APP.showToast('Production deleted and inventory adjusted!', 'success');
+      APP.showToast('Production deleted and inventory reversed!', 'success');
       loadData();
     } catch (e) {
       console.error(e);
@@ -266,8 +297,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const term = e.target.value.toLowerCase();
     const filtered = allProductions.filter(b => 
       (b.batch_no || '').toLowerCase().includes(term) ||
-      (b.product_name || '').toLowerCase().includes(term) ||
-      (b.formula_name || '').toLowerCase().includes(term)
+      (b.product_name || '').toLowerCase().includes(term)
     );
     renderTable(filtered);
   });

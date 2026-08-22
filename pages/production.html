@@ -4,15 +4,15 @@
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AgroChem ERP — Production</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../assets/css/style.css?v=54"><link rel="stylesheet" href="../assets/css/tables.css?v=54"><link rel="stylesheet" href="../assets/css/forms.css?v=54"><link rel="stylesheet" href="../assets/css/responsive.css?v=54">
-  <link rel="stylesheet" href="../assets/css/components/search-select.css?v=54">
+  <link rel="stylesheet" href="../assets/css/style.css?v=55"><link rel="stylesheet" href="../assets/css/tables.css?v=55"><link rel="stylesheet" href="../assets/css/forms.css?v=55"><link rel="stylesheet" href="../assets/css/responsive.css?v=55">
+  <link rel="stylesheet" href="../assets/css/components/search-select.css?v=55">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="manifest" href="../manifest.json">
   <meta name="theme-color" content="#10B981">
 </head>
 <body>
 <div class="app-layout" id="app-layout">
-  <script src="../assets/js/shared-layout.js?v=54"></script>
+  <script src="../assets/js/shared-layout.js?v=55"></script>
   <script>document.addEventListener('DOMContentLoaded',()=>LAYOUT.injectLayout('Production','Transactions'))</script>
   <main class="main-content" id="main-content">
     <div class="page-body">
@@ -71,37 +71,48 @@
     <div class="modal-body">
       <form id="production-form" onsubmit="return false">
         
+        <!-- Section 1: Production Record -->
         <section class="product-form-card" style="margin-bottom: 20px;">
           <div class="product-form-card-head">
-            <h4>Production Details</h4>
-            <p>Select the date and add the finished goods produced.</p>
+            <h4>Production Record</h4>
+            <p>Log a new manufacturing batch.</p>
           </div>
-          <div class="form-grid product-form-grid" style="padding: 20px; display: grid; grid-template-columns: 1fr; gap: 15px;">
-            <div class="form-group" style="max-width: 200px;">
-              <label class="form-label">Date *</label>
-              <input class="form-input" name="date" type="date" required>
+          <div class="form-grid product-form-grid" style="padding: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div class="form-group">
+              <label class="form-label">Product Manufactured *</label>
+              <select class="form-input" name="product_id" id="product-select" required>
+                <option value="">Select Product...</option>
+              </select>
             </div>
             <div class="form-group">
-              <label class="form-label">Notes (Optional)</label>
-              <textarea class="form-input" name="notes" placeholder="Any production notes" rows="2"></textarea>
+              <label class="form-label">Production Quantity *</label>
+              <input class="form-input" name="quantity_produced" type="number" min="0.01" step="0.01" placeholder="e.g. 40" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Batch No (Optional)</label>
+              <input class="form-input" name="batch_no" type="text" placeholder="Auto-generated if blank">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Date *</label>
+              <input class="form-input" name="date" type="date" required>
             </div>
           </div>
         </section>
         
+        <!-- Section 2: Inventory Adjustments -->
         <section class="product-form-card">
           <div class="product-form-card-head">
-            <h4>Produced Items</h4>
-            <p>Add the products and quantities produced.</p>
+            <h4>Inventory Changes</h4>
+            <p>Select which inventory items to consume (DECREASE) and which items to output (INCREASE).</p>
           </div>
           <div style="padding: 20px;">
             <div class="line-items-container">
               <table class="line-items-table" style="width: 100%; text-align: left; margin-bottom: 8px;">
                 <thead>
                   <tr style="border-bottom: 1px solid var(--border); padding-bottom: 8px;">
-                    <th style="padding-bottom: 8px; width: 45%;">Select Product</th>
-                    <th style="padding-bottom: 8px; width: 15%;">Quantity</th>
-                    <th style="padding-bottom: 8px; width: 20%;">Unit Price (₹)</th>
-                    <th style="padding-bottom: 8px; width: 15%;">Total</th>
+                    <th style="padding-bottom: 8px; width: 45%;">Inventory Item</th>
+                    <th style="padding-bottom: 8px; width: 25%;">Quantity</th>
+                    <th style="padding-bottom: 8px; width: 25%;">Action</th>
                     <th style="padding-bottom: 8px; width: 5%;"></th>
                   </tr>
                 </thead>
@@ -109,16 +120,8 @@
               </table>
             </div>
             <button type="button" class="add-line-btn" style="margin-top: 10px;" onclick="addIngredientRow()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Item
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;margin-right:4px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Inventory Item
             </button>
-            <div class="summary-row" style="margin-top: 20px; display: flex; justify-content: flex-end;">
-              <div class="summary-box" style="background: var(--surface); padding: 15px; border-radius: 8px; border: 1px solid var(--border); min-width: 250px;">
-                <div class="summary-line" style="display: flex; justify-content: space-between; font-weight: 700; font-size: 16px;">
-                  <span class="label">Total Value:</span>
-                  <span class="value" id="production-total-display" style="color: var(--success);">₹0.00</span>
-                </div>
-              </div>
-            </div>
           </div>
         </section>
         
@@ -131,9 +134,9 @@
   </div>
 </div>
 
-<script src="../assets/js/utils.js?v=54"></script>
-<script src="../assets/js/database.js?v=54"></script>
-<script src="../assets/js/app.js?v=54"></script>
-<script src="../assets/js/production.js?v=54"></script>
+<script src="../assets/js/utils.js?v=55"></script>
+<script src="../assets/js/database.js?v=55"></script>
+<script src="../assets/js/app.js?v=55"></script>
+<script src="../assets/js/production.js?v=55"></script>
 </body>
 </html>
