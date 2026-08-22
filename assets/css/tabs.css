@@ -1,0 +1,59 @@
+/* ── Tabs System ─────────────────────────────────────────── */
+.tabs {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  gap: 0 !important;
+  border-bottom: 2px solid var(--border) !important;
+  margin-bottom: 20px !important;
+  background: linear-gradient(90deg, rgba(137,233,0,0.05) 0%, transparent 100%) !important;
+  position: relative !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none !important;
+}
+
+.tab-btn {
+  padding: 12px 20px !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  color: var(--text-secondary) !important;
+  background: none !important;
+  border: none !important;
+  cursor: pointer !important;
+  border-bottom: 2px solid transparent !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  margin-bottom: -2px !important;
+  white-space: nowrap !important;
+  flex: 1 0 auto !important; /* Allow growing to fill space */
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Mobile adjustments to prevent scrolling if possible */
+@media (max-width: 768px) {
+  .tab-btn {
+    padding: 10px 6px !important;
+    font-size: 11px !important;
+    flex: 1 1 0 !important; /* Force equal width and shrink to fit */
+    min-width: 0 !important; /* Allow shrinking below content width */
+    letter-spacing: -0.015em !important;
+  }
+}
+
+.tab-btn:hover {
+  color: var(--text-primary) !important;
+  background: rgba(137,233,0,0.04) !important;
+}
+
+.tab-btn.active {
+  color: var(--accent) !important;
+  border-bottom-color: var(--accent) !important;
+  background: rgba(137,233,0,0.08) !important;
+}

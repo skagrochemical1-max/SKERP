@@ -1,0 +1,61 @@
+{
+  "products": [
+    {
+      "ProductID": "P-001",
+      "BrandName": "New",
+      "ProductName": "One",
+      "PackagingSize": "1 LTR",
+      "UnitPrice": 850,
+      "LastUpdated": "2026-07-04T03:38:08.064Z"
+    },
+    {
+      "ProductID": "P-002",
+      "BrandName": "New",
+      "ProductName": "One",
+      "PackagingSize": "500 ML",
+      "UnitPrice": 750,
+      "LastUpdated": "2026-07-04T03:38:08.072Z"
+    }
+  ],
+  "clients": [],
+  "invoices": [
+    {
+      "InvoiceNumber": "100",
+      "InvoiceType": "Non-GST",
+      "Date": "2026-07-04",
+      "DueDate": "",
+      "ClientName": "New One",
+      "ClientAddress": "Rajkot",
+      "ClientPhone": "12345 67890",
+      "ClientGSTIN": "",
+      "ClientState": "Gujarat",
+      "ClientStateCode": "24",
+      "PlaceOfSupply": "Gujarat",
+      "Subtotal": 50000,
+      "TaxableAmount": 50000,
+      "Tax": 0,
+      "CGST": 0,
+      "SGST": 0,
+      "IGST": 0,
+      "TotalTax": 0,
+      "GrandTotal": 50000,
+      "DueAmount": 0,
+      "NonGstTaxType": "NONE",
+      "CompanyName": "S K Agro Chemical",
+      "FromAddress": "Survey No.207/1, Nr. Balaji Agro, Shapar, Rajkot, Gujarat - 360024",
+      "FromPhone": "9664675227",
+      "FromEmail": "skagro3105@gmail.com",
+      "FromGSTIN": "24AERFS1718Q1ZB",
+      "Signatory": "S K AGRO CHEMICAL",
+      "BankName": "PUNJAB NATIONAL BANK",
+      "BankAcc": "9178002100002019",
+      "BankIFSC": "PUNB0917800",
+      "UPI": "9427213943m@pnb",
+      "Intro": "Dear Sir/Mam,\nThank you for your valuable inquiry. We are pleased to quote as below:",
+      "Terms": "We hope you find our offer to be in line with your requirement.\nYour goods will be dispatched within 2-3 days after payment is received.\nWednesday and Sunday Company Holiday.",
+      "ItemsJSON": "{\"InvoiceNumber\":\"100\",\"UniqueID\":\"INV-MR5T7WPP-6IAQ\",\"InvoiceType\":\"Non-GST\",\"DocumentType\":\"Invoice\",\"GSTCopyLeft\":\"\",\"GSTCopyCenter\":\"\",\"GSTCopyRight\":\"\",\"GSTIN\":\"\",\"ClientState\":\"\",\"ClientStateCode\":\"\",\"PlaceOfSupply\":\"\",\"TaxableAmount\":\"\",\"DueDate\":\"\",\"Date\":\"2026-07-04\",\"date\":\"2026-07-04\",\"ClientName\":\"New One\",\"ClientAddress\":\"Rajkot\",\"ClientPhone\":\"12345 67890\",\"ClientGSTIN\":\"\",\"ClientName \":\"New One\",\"Client Name\":\"New One\",\"clientName\":\"New One\",\"CustomerName\":\"New One\",\"customerName\":\"New One\",\"DueAmount\":0,\"dueAmount\":0,\"Subtotal\":50000,\"Tax\":\"\",\"CGST\":\"\",\"SGST\":\"\",\"IGST\":\"\",\"TotalTax\":\"\",\"GrandTotal\":50000,\"taxType\":\"\",\"GSTTaxType\":\"\",\"NonGstTaxType\":\"NONE\",\"GSTSubtotal\":\"\",\"GSTGrandTotal\":\"\",\"NonGSTSubtotal\":50000,\"NonGSTGrandTotal\":50000,\"CompanyName\":\"S K Agro Chemical\",\"FromAddress\":\"Survey No.207/1, Nr. Balaji Agro, Shapar, Rajkot, Gujarat - 360024\",\"FromPhone\":\"9664675227\",\"FromEmail\":\"skagro3105@gmail.com\",\"FromGSTIN\":\"\",\"Signatory\":\"S K AGRO CHEMICAL\",\"BankName\":\"PUNJAB NATIONAL BANK\",\"BankAcc\":\"9178002100002019\",\"BankIFSC\":\"PUNB0917800\",\"UPI\":\"9427213943m@pnb\",\"Intro\":\"Dear Sir/Mam,\\nThank you for your valuable inquiry. We are pleased to quote as below:\",\"Terms\":\"We hope you find our offer to be in line with your requirement.\\nYour goods will be dispatched within 2-3 days after payment is received.\\nWednesday and Sunday Company Holiday.\",\"ItemsJSON\":\"\",\"meta\":{\"uniqueId\":\"INV-MR5T7WPP-6IAQ\",\"invoiceNumber\":\"100\",\"InvoiceNumber\":\"100\",\"date\":\"2026-07-04\",\"dueDate\":\"\",\"createdTimestamp\":\"2026-07-04T03:35:41.918Z\",\"version\":\"1.1\"},\"business\":{\"company\":\"S K Agro Chemical\",\"address\":\"Survey No.207/1, Nr. Balaji Agro, Shapar, Rajkot, Gujarat - 360024\",\"phone\":\"9664675227\",\"email\":\"skagro3105@gmail.com\",\"gstin\":\"24AERFS1718Q1ZB\",\"signatory\":\"S K AGRO CHEMICAL\"},\"bank\":{\"name\":\"PUNJAB NATIONAL BANK\",\"account\":\"9178002100002019\",\"ifsc\":\"PUNB0917800\",\"upi\":\"9427213943m@pnb\"},\"customer\":{\"name\":\"New One\",\"address\":\"Rajkot\",\"phone\":\"12345 67890\",\"gstin\":\"\",\"dueAmount\":0,\"state\":\"\",\"stateCode\":\"\",\"placeOfSupply\":\"\"},\"customerInfo\":{\"name\":\"New One\"},\"settings\":{\"intro\":\"Dear Sir/Mam,\\nThank you for your valuable inquiry. We are pleased to quote as below:\",\"terms\":\"We hope you find our offer to be in line with your requirement.\\nYour goods will be dispatched within 2-3 days after payment is received.\\nWednesday and Sunday Company Holiday.\",\"gstRate\":0,\"taxType\":\"NONE\",\"showQR\":false},\"rows\":[{\"id\":\"r2\",\"brand\":\"Product\",\"name\":\"Number One\",\"desc\":\"1 LTR\",\"qty\":100,\"price\":500,\"total\":50000,\"hsn\":\"\",\"gstRate\":0}],\"calculations\":{\"subtotal\":50000,\"taxType\":\"NONE\",\"cgstRate\":0,\"sgstRate\":0,\"igstRate\":0,\"cgstAmount\":0,\"sgstAmount\":0,\"igstAmount\":0,\"totalTax\":0,\"grandTotal\":50000}}",
+      "LastUpdated": "2026-07-04T03:35:41.944Z",
+      "UniqueID": "INV-MR5T7WPP-6IAQ"
+    }
+  ]
+}

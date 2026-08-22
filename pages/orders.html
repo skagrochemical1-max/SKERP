@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgroChem ERP — Orders</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css?v=41"><link rel="stylesheet" href="../assets/css/tables.css?v=41"><link rel="stylesheet" href="../assets/css/forms.css?v=41"><link rel="stylesheet" href="../assets/css/responsive.css?v=41">
+  <link rel="stylesheet" href="../assets/css/components/search-select.css?v=41">
+  <style>
+    /* Toggle switch style */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 32px;
+      height: 18px;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #cbd5e1;
+      transition: .3s;
+      border-radius: 18px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 12px;
+      width: 12px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: #10b981;
+    }
+    input:checked + .slider:before {
+      transform: translateX(14px);
+    }
+  </style>
+</head>
+<body>
+<div class="app-layout" id="app-layout">
+  <script src="../assets/js/shared-layout.js?v=41"></script>
+  <script>document.addEventListener('DOMContentLoaded',()=>LAYOUT.injectLayout('Orders','Orders'))</script>
+  <main class="main-content" id="main-content">
+    <div class="page-body">
+      <div class="page-header">
+        <div class="page-header-left"><h2>Sales Orders</h2><p>Create and manage customer orders</p></div>
+        <div class="page-header-right">
+          <button class="btn btn-primary" onclick="openAdd()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>New Order</button>
+        </div>
+      </div>
+      <div class="table-tabs">
+        <button class="tab-btn active" data-tab="Orders">Orders Summary</button>
+        <button class="tab-btn" data-tab="OrderItems">Order Items Detail</button>
+      </div>
+      <div class="table-wrap data-table-wrap-mobile" id="orders-table-wrap">
+        <div class="table-toolbar">
+          <div class="table-toolbar-left">
+            <div class="table-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input id="search-input" placeholder="Search orders…"></div>
+            <div class="table-filters cat-pill-filters" id="status-pill-filters">
+              <button type="button" class="cat-pill active" data-status="">All</button>
+              <button type="button" class="cat-pill" data-status="Pending">Pending</button>
+              <button type="button" class="cat-pill" data-status="Completed">Completed</button>
+            </div>
+          </div>
+          <div class="table-toolbar-right"><span class="text-sm text-muted" id="total-info">Loading…</span></div>
+        </div>
+        <table class="data-table" id="orders-table">
+          <thead><tr><th><input type="checkbox"></th><th>Order No</th><th>Client</th><th>Date</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody><tr><td colspan="9"><div class="empty-state"><div class="spinner" style="margin:0 auto"></div></div></td></tr></tbody>
+        </table>
+        <div class="pagination"></div>
+      </div>
+
+      <div class="table-wrap data-table-wrap-mobile" id="order-items-table-wrap" style="display:none">
+        <div class="table-toolbar">
+          <div class="table-toolbar-left">
+            <div class="table-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input id="items-search-input" placeholder="Search order items, products, clients…"></div>
+            <div class="table-filters cat-pill-filters" id="items-status-pill-filters">
+              <button type="button" class="cat-pill active" data-status="">All</button>
+              <button type="button" class="cat-pill" data-status="Pending">Pending</button>
+              <button type="button" class="cat-pill" data-status="Completed">Completed</button>
+            </div>
+          </div>
+          <div class="table-toolbar-right"><span class="text-sm text-muted" id="items-total-info">Loading…</span></div>
+        </div>
+        <table class="data-table" id="order-items-detail-table">
+          <thead><tr><th>Order No</th><th>Client</th><th>Date</th><th>Product</th><th>Pack Size / Unit</th><th>Qty</th><th>Unit Price (₹)</th><th>Total (₹)</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody><tr><td colspan="10"><div class="empty-state"><div class="spinner" style="margin:0 auto"></div></div></td></tr></tbody>
+        </table>
+        <div class="pagination"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Order Modal -->
+<div class="modal-overlay" id="order-modal">
+  <div class="modal modal-xl">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">New Order</span>
+      <button class="modal-close" onclick="APP.closeModal('order-modal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <form id="order-form" onsubmit="return false">
+        <section class="product-form-card">
+          <div class="product-form-card-head">
+            <h4>Order Metadata</h4>
+            <p>Define general dispatch terms, booking dates, and select retailer client.</p>
+          </div>
+          <div class="form-grid product-form-grid">
+            <div class="form-group">
+              <label class="form-label">Order No</label>
+              <input class="form-input" name="order_no" id="order-no-field" readonly style="background:var(--bg)">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Date</label>
+              <input class="form-input" name="date" id="order-date-field" type="date">
+            </div>
+            <div class="form-group form-col-full">
+              <label class="form-label">Client <span class="required">*</span></label>
+              <select class="form-select" name="client_id" id="client-select" data-autocomplete>
+                <option value="">Select…</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Due Date</label>
+              <input class="form-input" name="due_date" type="date">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Status</label>
+              <select class="form-select" name="status" id="order-status-field">
+                <option value="Completed">Completed</option>
+                <option value="Pending">Pending</option>
+              </select>
+            </div>
+            <div class="form-group form-col-full" style="margin-top: 4px;">
+              <div class="toggle-container" style="display: flex; align-items: center; gap: 8px;">
+                <label class="switch">
+                  <input type="checkbox" id="allow-backorder-toggle" name="allow_backorder">
+                  <span class="slider"></span>
+                </label>
+                <span style="font-size: 12px; font-weight: 500; color: var(--text-muted); user-select: none;">Allow order confirmation even if stock is low (Backorder mode)</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="product-form-card">
+          <div class="product-form-card-head">
+            <h4>Payment & Notes</h4>
+            <p>Define collected advance amount, tax/discount percentages, and shipping notes.</p>
+          </div>
+          <div class="form-grid product-form-grid">
+            <div class="form-group">
+              <label class="form-label">Amount Paid (₹)</label>
+              <input class="form-input" name="paid_amount" id="paid-amount-input" type="number" min="0" step="0.01" placeholder="0.00" oninput="calculateTotal()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Remaining Balance (₹)</label>
+              <input class="form-input" id="remaining-balance-field" readonly style="background:var(--bg); font-weight:700; color:var(--danger, #ef4444);" placeholder="0.00">
+            </div>
+            <div class="form-group">
+              <label class="form-label">GST Type</label>
+              <select class="form-select" id="gst-type-select" onchange="onGstTypeChange(this.value)">
+                <option value="">None (0%)</option>
+                <option value="GST5">GST 5% (CGST 2.5% + SGST 2.5%)</option>
+                <option value="GST12">GST 12% (CGST 6% + SGST 6%)</option>
+                <option value="GST18">GST 18% (CGST 9% + SGST 9%)</option>
+                <option value="IGST5">IGST 5%</option>
+                <option value="IGST12">IGST 12%</option>
+                <option value="IGST18">IGST 18%</option>
+              </select>
+              <input type="hidden" name="tax" id="tax-field" value="0">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Discount %</label>
+              <input class="form-input" name="discount" id="discount-field" type="number" min="0" max="100" step="0.1" placeholder="0" value="0">
+              <div class="toggle-container" style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                <label class="switch">
+                  <input type="checkbox" id="auto-discount-toggle">
+                  <span class="slider"></span>
+                </label>
+                <span style="font-size: 11px; font-weight: 500; color: var(--text-muted); user-select: none;">Auto-calculate discount (fully paid)</span>
+              </div>
+            </div>
+            <div class="form-group form-col-full">
+              <label class="form-label">Notes</label>
+              <textarea class="form-textarea" name="notes" rows="2" placeholder="Order notes…"></textarea>
+            </div>
+          </div>
+        </section>
+
+        <section class="product-form-card">
+          <div class="product-form-card-head">
+            <h4>Order Items & Totals</h4>
+            <p>Specify formulation quantities and sales price per pack size.</p>
+          </div>
+          <div class="line-items-wrap">
+            <table class="line-items-table" style="margin-bottom:8px">
+              <thead><tr>
+                <th style="width:25%">Product</th>
+                <th style="width:15%">Pack Size</th>
+                <th style="width:20%">Bottle</th>
+                <th style="width:10%">Qty</th>
+                <th style="width:15%">Unit Price (₹)</th>
+                <th style="width:10%">Total</th>
+                <th style="width:5%"></th>
+              </tr></thead>
+              <tbody id="order-items-tbody"></tbody>
+            </table>
+          </div>
+          <button type="button" class="add-line-btn" style="margin-top: 10px;" onclick="addOrderItem()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Item</button>
+          <div class="summary-row"><div class="summary-box">
+            <div class="summary-line"><span class="label">Subtotal:</span><span class="value" id="order-total-display">₹0.00</span></div>
+            <div class="summary-line" id="cgst-row" style="display:none;"><span class="label" id="cgst-label">CGST (0%):</span><span class="value" id="cgst-display">₹0.00</span></div>
+            <div class="summary-line" id="sgst-row" style="display:none;"><span class="label" id="sgst-label">SGST (0%):</span><span class="value" id="sgst-display">₹0.00</span></div>
+            <div class="summary-line" id="igst-row" style="display:none;"><span class="label" id="igst-label">IGST (0%):</span><span class="value" id="igst-display">₹0.00</span></div>
+            <div class="summary-line" id="grand-total-row" style="display:none; font-weight:700;"><span class="label">Grand Total (incl. GST):</span><span class="value" id="grand-total-display">₹0.00</span></div>
+          </div></div>
+        </section>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="APP.closeModal('order-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveOrder()">Save Order</button>
+    </div>
+  </div>
+</div>
+
+<!-- View Modal -->
+<div class="modal-overlay" id="view-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header"><span class="modal-title">Order Details</span><button class="modal-close" onclick="APP.closeModal('view-modal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body" id="view-content"></div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="APP.closeModal('view-modal')">Close</button></div>
+  </div>
+</div>
+
+<script src="../assets/js/database.js?v=66"></script>
+<script src="../assets/js/utils.js?v=66"></script>
+<script src="../assets/js/components/search-select.js?v=66"></script>
+<script src="../assets/js/app.js?v=66"></script><script src="../assets/js/orders.js?v=66"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</body></html>

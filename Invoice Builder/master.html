@@ -1,0 +1,700 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Master Data</title>
+  <link rel="shortcut icon" href="public/favicon.ico" />
+  <link rel="icon" type="image/png" sizes="16x16" href="public/favicon-16x16.jpg" />
+  <link rel="icon" type="image/png" sizes="32x32" href="public/favicon-32x32.jpg" />
+  <link rel="apple-touch-icon" sizes="180x180" href="public/icon-192.png" />
+  <link rel="manifest" href="public/manifest.json" />
+  <meta name="theme-color" content="#3f6b14" />
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=block"
+    rel="stylesheet" />
+  <!-- App Scripts -->
+  <script src="js/api.js?v=1.0.2"></script>
+  <script src="js/storage.js?v=1.0.2"></script>
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/main.css?v=1.0.2" />
+  <style>
+    :root {
+      --glass-bg: rgba(255, 255, 255, 0.03);
+      --glass-border: rgba(255, 255, 255, 0.1);
+    }
+
+    [data-theme="light"] {
+      --glass-bg: rgba(0, 0, 0, 0.02);
+      --glass-border: rgba(0, 0, 0, 0.05);
+    }
+
+    body {
+      background-color: var(--bg-main);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      transition: background-color 0.3s;
+      color: var(--text-main);
+    }
+
+    .master-container {
+      padding: 40px 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+      color: var(--text-main);
+      display: block !important;
+    }
+
+    .master-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 40px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .master-control-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    /* ── Tabs ── */
+    .master-tabs-premium {
+      display: flex;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      padding: 4px;
+      border-radius: 12px;
+      gap: 4px;
+    }
+
+    .tab-btn-premium {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 8px 18px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 9px;
+      transition: 0.2s;
+      font-size: 13.5px;
+      font-family: inherit;
+    }
+
+    .tab-btn-premium.active {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 3px 10px var(--accent-light);
+    }
+
+    .tab-btn-premium:hover:not(.active) {
+      background: var(--accent-light);
+      color: var(--primary);
+    }
+
+    .search-container {
+      position: relative;
+      flex: 1;
+      max-width: 400px;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      font-size: 20px;
+      pointer-events: none;
+    }
+
+    .search-container input {
+      width: 100%;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 16px 12px 42px;
+      color: var(--text-main);
+      font-size: 14px;
+      transition: all 0.2s;
+      text-align: center;
+    }
+
+    .search-container input:focus {
+      border-color: var(--primary);
+      outline: none;
+      box-shadow: 0 0 0 3px var(--accent-light);
+    }
+
+    /* ── Table wrapper ── */
+    .data-table-wrap {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 8px 28px rgba(38, 61, 25, 0.09);
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13.5px;
+    }
+
+    /* ── ERP-style tinted thead ── */
+    .data-table thead {
+      background: rgba(63, 107, 20, 0.05);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    [data-theme="dark"] .data-table thead {
+      background: rgba(143, 220, 76, 0.06);
+    }
+
+    .data-table th {
+      padding: 13px 18px;
+      text-align: left;
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+
+    .data-table td {
+      padding: 14px 18px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+      color: var(--text-sub);
+    }
+
+    .table-cell-text {
+      display: block;
+      min-width: 0;
+      max-width: 100%;
+    }
+
+    .table-cell-text.single-line {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .table-cell-text.wrap-anywhere {
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      line-height: 1.35;
+    }
+
+    .table-cell-text.mono {
+      font-family: monospace;
+      letter-spacing: 0.3px;
+    }
+
+    .data-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .data-table tbody tr:hover td {
+      background: var(--bg-banner-hover);
+    }
+
+    .action-btn {
+      width: 32px;
+      height: 32px;
+      background: var(--border-light);
+      border: none;
+      color: var(--text-main);
+      cursor: pointer;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: 0.2s;
+      margin-left: 4px;
+    }
+
+    .action-btn .material-symbols-outlined {
+      font-size: 18px;
+    }
+
+    .action-btn:hover {
+      background: var(--accent-light);
+      color: var(--primary);
+    }
+
+    .action-btn.delete:hover {
+      background: var(--danger);
+      color: #fff;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 10000;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      overflow-y: auto;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 40px 10px;
+    }
+
+    .modal-content {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      padding: 32px;
+      border-radius: 16px;
+      box-shadow: var(--shadow-lg);
+      margin: auto;
+      max-width: 600px;
+      width: 100%;
+    }
+
+    .close {
+      position: absolute;
+      right: 20px;
+      top: 20px;
+      font-size: 24px;
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: 0.2s;
+    }
+
+    .close:hover {
+      color: var(--danger);
+    }
+
+    @media (max-width: 768px) {
+      /* ── Toolbar ── */
+      #toolbar {
+        padding: 0 12px;
+        height: 56px;
+      }
+      #toolbar .toolbar-brand { gap: 8px; }
+      #toolbar .nav-logo { height: 34px; width: 34px; }
+      #toolbar .brand-name { font-size: 14px; }
+      #toolbar-right > a.btn { padding: 6px 10px; font-size: 12px; }
+      #toolbar-right > a.btn .erp-label { display: none; }
+
+      /* ── Page content ── */
+      .master-container {
+        padding: 20px 12px;
+      }
+
+      .master-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 14px;
+        margin-bottom: 20px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--border-light);
+      }
+
+      .master-header button {
+        width: 100%;
+        height: 48px;
+        font-size: 14px;
+      }
+
+      /* ── Tabs + Search row ── */
+      .master-control-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      /* Make tabs fill full width */
+      .master-tabs-premium {
+        width: 100%;
+      }
+      .tab-btn-premium {
+        flex: 1;
+        padding: 10px 8px;
+        font-size: 13px;
+        gap: 6px;
+      }
+
+      .search-container {
+        max-width: none;
+        flex: unset;
+        width: 100%;
+      }
+
+      /* ── Modal Adjustments ── */
+      .modal-content {
+        margin: 0;
+        width: 100% !important;
+        max-width: none !important;
+        min-height: 100%;
+        height: max-content !important;
+        border-radius: 0;
+        padding: 24px 16px !important;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px;
+      }
+
+      .form-grid > div {
+        grid-column: span 1 !important;
+      }
+
+      #modal-actions-area {
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 20px;
+      }
+
+      #modal-actions-area button {
+        width: 100%;
+        height: 48px;
+        order: 2;
+      }
+
+      #save-btn { order: 1 !important; }
+      #save-another-btn { order: 1 !important; }
+
+      /* ── Responsive Table → Cards ── */
+      .data-table-wrap {
+        background: transparent;
+        border: none;
+        box-shadow: none;
+      }
+
+      .data-table thead {
+        display: none;
+      }
+
+      .data-table tbody {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .data-table,
+      .data-table tr,
+      .data-table td {
+        display: block;
+        width: 100%;
+      }
+
+      .data-table tr {
+        border: 1.5px solid var(--border);
+        background: var(--bg-card);
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+        margin-bottom: 0;
+      }
+
+      /* Label on top, value below */
+      .data-table td {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start !important;
+        text-align: left !important;
+        padding: 10px 16px;
+        position: static;
+        border-bottom: 1px solid var(--border-light);
+        gap: 3px;
+        min-height: unset;
+      }
+
+      .data-table td:last-child {
+        border-bottom: none;
+      }
+
+      .data-table td::before {
+        content: attr(data-label);
+        font-size: 9px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text-muted);
+        line-height: 1;
+        display: block;
+        margin-bottom: 2px;
+        position: static;
+        transform: none;
+      }
+
+      .table-cell-text.single-line {
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+        text-align: left;
+        overflow-wrap: anywhere;
+      }
+
+      .table-cell-text.wrap-anywhere {
+        font-size: 13px;
+      }
+
+      /* Actions row — right-aligned footer */
+      .data-table td[data-label="Actions"] {
+        flex-direction: row;
+        justify-content: flex-end;
+        align-items: center !important;
+        gap: 10px;
+        background: var(--bg-banner);
+        border-top: 1.5px solid var(--border);
+        border-bottom: none;
+        padding: 10px 16px;
+      }
+      .data-table td[data-label="Actions"]::before {
+        display: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- TOAST -->
+  <div id="toast"></div>
+
+  <!-- TOOLBAR -->
+  <div id="toolbar">
+    <div class="toolbar-brand">
+      <a class="back-arrow-tool" href="index.html" title="Back to Builder">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </a>
+      <img src="public/logo.jpg" alt="Logo" class="nav-logo" id="navbar-logo" onerror="this.style.display='none'" />
+      <div class="brand-text">
+        <span class="brand-name">AgroChem</span>
+      </div>
+    </div>
+    <div style="flex-grow:1;"></div>
+    <div id="toolbar-right" style="display:flex;align-items:center;gap:10px;">
+      <a class="btn btn-ghost erp-dash-btn" href="../pages/dashboard.html" style="font-size: 14px; padding: 6px 12px; display: flex; align-items: center; gap: 6px; text-decoration: none; color: inherit;">
+        <span class="material-symbols-outlined">dashboard</span><span class="erp-label"> ERP Dashboard</span>
+      </a>
+      <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">
+        <span id="theme-icon" class="material-symbols-outlined">light_mode</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- APP -->
+  <div class="master-container" id="master-content">
+
+    <div class="master-header">
+      <div style="flex: 1;">
+        <h2 style="margin:0;font-size:28px;font-weight:800;letter-spacing:-0.02em;color:var(--text-main);">Data Management</h2>
+        <p style="margin:0;font-size:13.5px;color:var(--text-muted);margin-top:5px;">Manage your invoice database: Products, Prices, and Clients.</p>
+      </div>
+      <button class="btn btn-primary" onclick="openModal()"
+        style="height:44px;padding:0 22px;border-radius:12px;font-weight:700;font-size:13.5px;gap:8px;">
+        <span class="material-symbols-outlined" style="font-size:18px;">add</span> Create New Entry
+      </button>
+    </div>
+
+
+    <div class="master-control-row">
+      <div style="display:flex;gap:12px;">
+        <div class="master-tabs-premium">
+          <button class="tab-btn-premium active" onclick="switchTab('clients')" id="tab-clients">
+            <span class="material-symbols-outlined" style="font-size:18px;">groups</span> Clients
+          </button>
+          <button class="tab-btn-premium" onclick="switchTab('products')" id="tab-products">
+            <span class="material-symbols-outlined" style="font-size:18px;">package_2</span> Products
+          </button>
+        </div>
+      </div>
+
+      <div class="search-container">
+        <span class="material-symbols-outlined search-icon">search</span>
+        <input type="text" id="master-search" placeholder="Search records..." oninput="filterMasterTable()" />
+      </div>
+    </div>
+
+    <!-- PRODUCTS TABLE -->
+    <div class="data-table-wrap" id="view-products" style="display:none;margin-top:20px;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th style="width: 80px;">ID</th>
+            <th>Brand Name</th>
+            <th>Product Name</th>
+            <th>Packaging / Unit</th>
+            <th>Price (₹)</th>
+            <th style="width: 100px;text-align:right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="products-tbody">
+          <tr>
+            <td colspan="6">
+              <div class="loading-row-content">
+                <span class="material-symbols-outlined spinner-icon">autorenew</span>
+                Loading products...
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- CLIENTS TABLE -->
+    <div class="data-table-wrap" id="view-clients" style="margin-top:20px;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th style="width: 80px;">ID</th>
+            <th>Client Name</th>
+            <th>Phone</th>
+            <th>GSTIN</th>
+            <th style="text-align:right;">Due Amount (₹)</th>
+            <th style="width: 100px;text-align:right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="clients-tbody">
+          <tr>
+            <td colspan="6">
+              <div class="loading-row-content">
+                <span class="material-symbols-outlined spinner-icon">autorenew</span>
+                Loading clients...
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ADD/EDIT MODAL -->
+  <div id="data-modal" class="modal" style="display:none">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal()">&#x2715;</span>
+      <h2 id="modal-title" style="margin-bottom:16px;font-size:18px;">Add Record</h2>
+
+      <form id="record-form" onsubmit="saveRecord(event)">
+        <input type="hidden" id="entry-id" />
+
+        <!-- Product Fields -->
+        <div id="prod-fields">
+          <div class="form-grid">
+            <div>
+              <label style="font-size:12px;color:var(--text-muted);">Brand Name</label>
+              <input id="prod-brand" class="sb-input" style="width:100%;margin-top:4px;" required />
+            </div>
+            <div>
+              <label style="font-size:12px;color:var(--text-muted);">Product Name</label>
+              <input id="prod-name" class="sb-input" style="width:100%;margin-top:4px;" required />
+            </div>
+          </div>
+
+          <label style="font-size:12px;color:var(--text-muted);display:block;margin-top:16px;">Packaging Sizes &
+            Prices</label>
+          <div id="packaging-container">
+            <div class="pack-row"
+              style="margin-top:12px;display:flex;flex-direction:column;gap:8px;padding:12px;background:var(--bg-banner);border-radius:8px;border:1px solid var(--border-light);">
+              <div><input class="sb-input pack-size" placeholder="Size (e.g. 1 Ltr)" style="width:100%;" required />
+              </div>
+              <div style="display:flex;gap:8px;">
+                <input type="number" step="0.01" class="sb-input pack-price" placeholder="Price (₹)"
+                  style="width:100%;flex:1;" required />
+                <button type="button" class="btn btn-danger remove-pack-btn"
+                  onclick="this.parentElement.parentElement.remove()" style="padding:0 12px;display:none;">✕</button>
+              </div>
+            </div>
+          </div>
+          <button type="button" class="btn" onclick="addPackRowHTML()"
+            style="margin-top:8px;font-size:12px;padding:6px 12px;background:var(--border-light);color:var(--text-main);width:100%;">+
+            Add Another Size</button>
+        </div>
+
+        <!-- Client Fields -->
+        <div id="client-fields" style="display:none;">
+          <div class="form-grid">
+            <div style="grid-column: span 2;">
+              <label style="font-size:12px;color:var(--text-muted);">Client / Company Name</label>
+              <input id="client-name" class="sb-input" style="width:100%;margin-top:4px;" />
+            </div>
+            <div style="grid-column: span 2;">
+              <label style="font-size:12px;color:var(--text-muted);">Address</label>
+              <input id="client-addr" class="sb-input" style="width:100%;margin-top:4px;" />
+            </div>
+            <div>
+              <label style="font-size:12px;color:var(--text-muted);">Phone</label>
+              <input id="client-phone" class="sb-input" style="width:100%;margin-top:4px;" />
+            </div>
+            <div>
+              <label style="font-size:12px;color:var(--text-muted);">GSTIN</label>
+              <input id="client-gstin" class="sb-input" style="width:100%;margin-top:4px;text-transform:uppercase;" />
+            </div>
+            <div style="grid-column: span 2;">
+              <label style="font-size:12px;color:var(--text-muted);">Due Amount (₹) <em style="opacity:0.6;font-style:normal;">(outstanding balance)</em></label>
+              <input id="client-due" type="number" step="0.01" min="0" class="sb-input" style="width:100%;margin-top:4px;" placeholder="0" />
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:24px;" id="modal-actions-area">
+          <button type="button" onclick="closeModal()"
+            style="background:transparent;color:var(--text-main);border:1px solid var(--border);padding:8px 16px;border-radius:4px;cursor:pointer;">Cancel</button>
+          <button type="button" id="save-another-btn" class="btn"
+            style="background:var(--border-light);color:var(--text-main);display:none;"
+            onclick="saveRecord(event, true)">Save & Add Another Size</button>
+          <button type="submit" id="save-btn" class="btn btn-primary" onclick="saveRecord(event, false)">Save
+            changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MAIN SCRIPT -->
+  <script src="js/master.js?v=1.0.2"></script>
+  <script>
+    // Load current theme safely
+    try {
+      document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark');
+    } catch (e) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+    // Force GSTIN to uppercase
+    document.addEventListener('DOMContentLoaded', () => {
+      const gEl = document.getElementById('client-gstin');
+      if (gEl) {
+        gEl.addEventListener('input', function() {
+          const s = this.selectionStart, e = this.selectionEnd;
+          const up = this.value.toUpperCase();
+          if (this.value !== up) { this.value = up; try { this.setSelectionRange(s, e); } catch(_){} }
+        });
+      }
+    });
+  </script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</body>
+
+</html>

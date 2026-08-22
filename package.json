@@ -1,0 +1,23 @@
+{
+  "name": "agrochem-erp",
+  "version": "1.0.0",
+  "description": "AgroChem ERP pesticide manufacturing database management system",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [
+    "erp",
+    "supabase",
+    "pesticide"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.1"
+  },
+  "devDependencies": {
+    "vite": "^5.4.1"
+  }
+}

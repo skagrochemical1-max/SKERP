@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Invoice Builder</title>
+  <meta name="description" content="Professional invoice generator." />
+  <meta name="keywords" content="invoice, invoice builder, professional invoice, GST invoice" />
+  <meta name="author" content="Invoice Builder" />
+  <link rel="shortcut icon" href="public/favicon.ico" />
+  <link rel="icon" type="image/png" sizes="32x32" href="public/favicon-32x32.jpg" />
+  <link rel="apple-touch-icon" sizes="180x180" href="public/icon-192.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Invoice" />
+  <link rel="manifest" href="public/manifest.json" />
+  <meta name="theme-color" content="#10b981" />
+  <meta property="og:title" content="Invoice Builder" />
+  <meta property="og:description" content="Professional invoice generator." />
+  <meta property="og:type" content="website" />
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=block"
+    rel="stylesheet" />
+  <!-- Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
+  <!-- App Scripts -->
+  <script src="js/api.js?v=1.0.2"></script>
+  <script src="js/tax-utils.js?v=1.0.2"></script>
+  <script src="js/storage.js?v=1.0.2"></script>
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/main.css?v=1.0.2" />
+  <link rel="stylesheet" href="css/override.css?v=1.0.2" />
+</head>
+
+<body>
+
+  <!-- ── LOGIN ───────────────────────────────────────────── -->
+  <div id="login-screen">
+    <div class="login-card">
+      <div class="login-logo" style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:0;">
+        <div class="brand-logo-icon" style="height:56px;width:56px;display:flex;align-items:center;justify-content:center;background:var(--accent-light);border-radius:12px;padding:6px;border:1px solid var(--border);flex-shrink:0;">
+          <svg viewBox="0 0 100 100" style="width:100%;height:100%;fill:none;stroke:var(--primary);stroke-width:6;stroke-linecap:round;stroke-linejoin:round;">
+            <path d="M35 15 H65 M50 15 V30 M43 30 H57 M30 80 H70 L55 35 V30 H45 V35 L30 80 Z" />
+            <path d="M50 72 C45 62 45 48 50 40 C55 48 55 62 50 72 Z" fill="var(--primary)" />
+          </svg>
+        </div>
+        <span id="brand-logo-text" style="font-size:28px;font-weight:800;color:var(--primary);letter-spacing:-0.5px;">AgroChem</span>
+      </div>
+      <div class="login-sub" style="margin-top:10px">Professional Invoice Builder</div>
+      <input id="l-user" class="login-field" placeholder="Username" type="text" autocomplete="username" />
+      <div class="login-pass-wrap">
+        <input id="l-pass" class="login-field" placeholder="Password" type="password" autocomplete="current-password" />
+        <button type="button" class="pass-toggle-btn" id="pass-toggle-btn" title="Show/Hide Password" aria-label="Show or hide password" aria-pressed="false">
+          <span class="material-symbols-outlined" id="pass-toggle-icon">visibility</span>
+        </button>
+      </div>
+      <button type="button" class="login-btn">Sign In</button>
+      <div class="login-hint"></div>
+    </div>
+  </div>
+
+  <!-- ── TOAST ──────────────────────────────────────────── -->
+  <div id="toast"></div>
+
+  <!-- ── AUTOCOMPLETE DROPDOWN (shared, absolutely positioned) ── -->
+  <div id="autocomplete-dropdown" class="autocomplete-dropdown"></div>
+
+  <!-- ── TOOLBAR ─────────────────────────────────────────── -->
+  <div id="toolbar" class="hidden">
+    <!-- Brand -->
+    <div class="toolbar-brand">
+      <div class="brand-logo-icon" style="height:42px;width:42px;display:flex;align-items:center;justify-content:center;background:var(--accent-light);border-radius:8px;padding:4px;border:1px solid var(--border);flex-shrink:0;">
+        <svg viewBox="0 0 100 100" style="width:100%;height:100%;fill:none;stroke:var(--primary);stroke-width:6;stroke-linecap:round;stroke-linejoin:round;">
+          <path d="M35 15 H65 M50 15 V30 M43 30 H57 M30 80 H70 L55 35 V30 H45 V35 L30 80 Z" />
+          <path d="M50 72 C45 62 45 48 50 40 C55 48 55 62 50 72 Z" fill="var(--primary)" />
+        </svg>
+      </div>
+      <div class="brand-text">
+        <span class="brand-name" style="font-weight:800;font-size:18px;letter-spacing:-0.3px;color:var(--primary);">AgroChem</span>
+      </div>
+    </div>
+
+    <div style="flex:1"></div>
+
+    <!-- Desktop Actions -->
+    <div class="toolbar-actions desktop-only">
+      <a class="btn btn-ghost" href="../pages/dashboard.html" style="margin-right:4px;">
+        <span class="material-symbols-outlined">dashboard</span> ERP Dashboard
+      </a>
+      <a class="btn btn-ghost" href="history.html" style="margin-right:4px;">
+        <span class="material-symbols-outlined">history</span> History
+      </a>
+      <button class="btn" id="save-cloud-btn" style="background:var(--primary);color:var(--bg-card);border:none;margin-right:4px;">
+        <span class="material-symbols-outlined">cloud_upload</span> Save
+      </button>
+      <button class="btn btn-primary" id="pdf-btn" style="margin-right:4px;">
+        <span class="material-symbols-outlined">download</span> Download PDF
+      </button>
+      <button class="btn btn-danger" onclick="doLogout()">
+        <span class="material-symbols-outlined">logout</span> Logout
+      </button>
+    </div>
+
+    <!-- Right: Theme Toggle + Profile (both mobile & desktop) -->
+    <div id="toolbar-right" style="display:flex;align-items:center;gap:10px;margin-left:14px;">
+      <button id="theme-toggle" class="theme-toggle" title="Toggle theme">
+        <span id="theme-icon" class="material-symbols-outlined">dark_mode</span>
+      </button>
+      <!-- profile-symbol injected here by JS -->
+    </div>
+  </div>
+
+  <!-- ── MOBILE BOTTOM TAB BAR ──────────────────────────── -->
+  <div id="mobile-tabs" style="display:none;">
+    <a class="mob-tab mob-nav-tab" href="../pages/dashboard.html">
+      <span class="material-symbols-outlined">dashboard</span> ERP
+    </a>
+    <a class="mob-tab mob-nav-tab" id="mob-history-tab" href="history.html">
+      <span class="material-symbols-outlined">history</span> History
+    </a>
+    <button class="mob-tab mob-nav-tab active" id="mob-edit-tab" onclick="showMobilePanel('edit')">
+      <span class="material-symbols-outlined">edit_note</span> Edit
+    </button>
+    <button class="mob-tab mob-nav-tab" id="mob-preview-tab" onclick="showMobilePanel('preview')">
+      <span class="material-symbols-outlined">article</span> Preview
+    </button>
+    <button class="mob-tab mob-action-tab" id="mob-save-btn" onclick="saveToCloud()">
+      <span class="material-symbols-outlined">cloud_upload</span> Save
+    </button>
+    <button class="mob-tab mob-action-tab mob-tab-pdf" id="mob-pdf-btn">
+      <span class="material-symbols-outlined">picture_as_pdf</span> PDF
+    </button>
+    <button class="mob-tab mob-action-tab mob-tab-logout" onclick="doLogout()">
+      <span class="material-symbols-outlined">logout</span> Logout
+    </button>
+  </div>
+
+  <!-- ── CLIENT CRUD MODAL ────────────────────────────── -->
+  <div id="client-modal" class="modal" style="display:none">
+    <div class="modal-content" style="position:relative;">
+      <span class="close" onclick="closeClientModal()">&#x2715;</span>
+      <h2 style="margin-bottom:4px;font-size:18px;">Manage Client</h2>
+      <input id="modal-client-name" class="sb-input" placeholder="Client Name" style="width:100%" />
+      <input id="modal-client-addr" class="sb-input" placeholder="Address" style="width:100%" />
+      <input id="modal-client-phone" class="sb-input" placeholder="Phone (10 digits)" style="width:100%" />
+      <input id="modal-client-gstin" class="sb-input" placeholder="GSTIN (15 chars)" style="width:100%;text-transform:uppercase;" />
+      <input id="modal-client-due" class="sb-input" placeholder="Previous Due Amount (₹)" style="width:100%" />
+      <div style="display:flex;gap:10px;margin-top:8px">
+        <button onclick="saveClientModal()"
+          style="flex:1;padding:10px;border-radius:8px;border:none;background:var(--primary);color:var(--bg-card);font-weight:700;cursor:pointer;">Save</button>
+        <button onclick="deleteClientModal()"
+          style="flex:1;padding:10px;border-radius:8px;border:none;background:#ef4444;color:#fff;font-weight:700;cursor:pointer;">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── APP ────────────────────────────────────────────── -->
+  <div id="app" class="hidden">
+
+    <!-- SIDEBAR -->
+    <div id="sidebar">
+
+      <!-- BILLING MODE SELECTION -->
+      <div class="sb-section" style="padding: 10px; margin-bottom: 12px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;">
+        <div style="display:flex; gap:6px;">
+          <button type="button" class="btn billing-mode-btn active" id="mode-nongst" onclick="setBillingMode('nongst')" style="flex:1; padding:10px 0; font-size:13px; font-weight:700; border-radius:8px;">Non-GST</button>
+          <button type="button" class="btn billing-mode-btn" id="mode-gst" onclick="setBillingMode('gst')" style="flex:1; padding:10px 0; font-size:13px; font-weight:700; border-radius:8px;">GST Invoice</button>
+        </div>
+      </div>
+
+      <!-- ── FIXED INFO BANNER (collapsible) ── -->
+      <div class="sb-fixed-banner" id="fixed-info-banner" onclick="toggleFixedInfo()">
+        <div class="sb-fixed-banner-left">
+          <span class="material-symbols-outlined" style="font-size:18px;color:var(--primary)">lock</span>
+          <div>
+            <div class="sb-fixed-banner-title">Fixed Info</div>
+            <div class="sb-fixed-banner-sub">Your Business · Bank Details · Notes</div>
+          </div>
+        </div>
+        <span class="material-symbols-outlined sb-fixed-chevron" id="fixed-chevron">expand_more</span>
+      </div>
+
+      <!-- COLLAPSIBLE: Your Business, Bank, Notes -->
+      <div id="fixed-info-block" style="display:none">
+
+        <!-- YOUR BUSINESS -->
+        <div class="sb-section">
+          <div class="sb-section-title">
+            <span class="material-symbols-outlined" style="font-size:14px">storefront</span>
+            Your Business
+          </div>
+
+
+          <!-- Logo Display -->
+          <div class="logo-upload-area" id="logo-upload-area" style="cursor:default; border:none; background:transparent; display:flex; align-items:center; justify-content:center; padding:0; margin-bottom:12px;">
+            <div class="brand-logo-icon" style="height:64px;width:64px;display:flex;align-items:center;justify-content:center;background:var(--accent-light);border-radius:12px;padding:8px;border:1px solid var(--border);">
+              <svg viewBox="0 0 100 100" style="width:100%;height:100%;fill:none;stroke:var(--primary);stroke-width:6;stroke-linecap:round;stroke-linejoin:round;">
+                <path d="M35 15 H65 M50 15 V30 M43 30 H57 M30 80 H70 L55 35 V30 H45 V35 L30 80 Z" />
+                <path d="M50 72 C45 62 45 48 50 40 C55 48 55 62 50 72 Z" fill="var(--primary)" />
+              </svg>
+            </div>
+          </div>
+
+          <span class="sb-label">Company Name</span>
+          <input class="sb-input" id="s-company" placeholder="Company Name" maxlength="60" value="AgroChem" />
+          <span class="sb-label">Address</span>
+          <input class="sb-input" id="s-address" placeholder="Street, City, State - PIN"
+            value="Survey No.207/1, Nr. Balaji Agro, Shapar, Rajkot, Gujarat - 360024" />
+          <div class="sb-row">
+            <div>
+              <span class="sb-label">Phone</span>
+              <input class="sb-input" id="s-phone" placeholder="+91 9999999999" value="9664675227" />
+            </div>
+            <div>
+              <span class="sb-label">Email</span>
+              <input class="sb-input" id="s-email" placeholder="you@email.com" value="skagro3105@gmail.com" />
+            </div>
+          </div>
+          <div class="sb-row">
+            <div>
+              <span class="sb-label">GSTIN</span>
+              <input class="sb-input" id="s-gstin" placeholder="GSTIN No." value="24AERFS1718Q1ZB" style="text-transform:uppercase;" />
+            </div>
+            <div>
+              <span class="sb-label">Authorized By</span>
+              <input class="sb-input" id="s-signatory" placeholder="Name" value="AgroChem" />
+            </div>
+          </div>
+        </div>
+
+        <!-- BANK DETAILS -->
+        <div class="sb-section">
+          <div class="sb-section-title">
+            <span class="material-symbols-outlined" style="font-size:14px">account_balance</span>
+            Bank Details
+          </div>
+          <span class="sb-label">Bank Name</span>
+          <input class="sb-input" id="s-bank-name" placeholder="e.g. State Bank of India" value="PUNJAB NATIONAL BANK"/>
+          <div class="sb-row">
+            <div>
+              <span class="sb-label">Account No.</span>
+              <input class="sb-input" id="s-bank-acc" placeholder="000123456789" value="9178002100002019"/>
+            </div>
+            <div>
+              <span class="sb-label">IFSC Code</span>
+              <input class="sb-input" id="s-bank-ifsc" placeholder="SBIN0001234" value="PUNB0917800"/>
+            </div>
+          </div>
+          <span class="sb-label">UPI ID</span>
+          <input class="sb-input" id="s-upi" placeholder="yourname@bank" value="9427213943m@pnb" onchange="updateQR()" />
+        </div>
+
+        <!-- NOTES / TERMS -->
+        <div class="sb-section">
+          <div class="sb-section-title">
+            <span class="material-symbols-outlined" style="font-size:14px">notes</span>
+            Notes / Terms
+          </div>
+          <span class="sb-label">Intro Message</span>
+          <textarea class="sb-input sb-textarea" id="s-intro" placeholder="Dear Sir/Mam, Thank you for your inquiry...">Dear Sir/Mam,
+Thank you for your valuable inquiry. We are pleased to quote as below:</textarea>
+          <span class="sb-label">Terms &amp; Conditions</span>
+          <textarea class="sb-input sb-textarea" id="s-terms" placeholder="Payment within 30 days...">We hope you find our offer to be in line with your requirement.
+Your goods will be dispatched within 2-3 days after payment is received.
+Wednesday and Sunday Company Holiday.</textarea>
+        </div>
+
+      </div><!-- /fixed-info-block -->
+
+      <!-- ── MASTER RECORDS (Products/Clients Management) ── -->
+
+      <div class="sb-fixed-banner" id="master-clients-banner"
+        onclick="togglePanel('master-clients-block', 'master-clients-chevron')">
+        <div class="sb-fixed-banner-left">
+          <span class="material-symbols-outlined" style="font-size:18px;color:var(--primary)">groups</span>
+          <div>
+            <div class="sb-fixed-banner-title">Manage Clients</div>
+            <div class="sb-fixed-banner-sub"> Manage Client Database</div>
+          </div>
+        </div>
+        <span class="material-symbols-outlined sb-fixed-chevron" id="master-clients-chevron">expand_more</span>
+      </div>
+      <div id="master-clients-block" style="display:none">
+        <div class="sb-section" style="display:flex;flex-direction:column;gap:10px;">
+          <button class="btn btn-primary" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;text-align:center;" onclick="openMasterModal('clients')">
+            <span class="material-symbols-outlined">add</span> Add New Client
+          </button>
+          <a class="btn" style="width:100%;background:var(--border-light);color:var(--text-main);display:flex;align-items:center;justify-content:center;" href="master.html">
+            <span class="material-symbols-outlined">database</span> Master Data Management
+          </a>
+        </div>
+      </div>
+
+
+      <!-- ── INVOICE DETAILS ── -->
+      <div class="sb-section">
+        <div class="sb-section-title">
+          <span class="material-symbols-outlined" style="font-size:14px">receipt_long</span>
+          Invoice Details
+        </div>
+        <input type="hidden" id="s-inv-num" />
+        <div class="sb-row">
+          <div>
+            <span class="sb-label">Date</span>
+            <input class="sb-input" id="s-inv-date" type="date" />
+          </div>
+          <div>
+            <span class="sb-label">Due Date (Optional)</span>
+            <input class="sb-input" id="s-due-date" type="date" />
+          </div>
+        </div>
+      </div>
+
+      <!-- ── BILL TO (CLIENT) ── -->
+      <div class="sb-section">
+        <div class="sb-section-title">
+          <span class="material-symbols-outlined" style="font-size:14px">person</span>
+          Bill To (Client)
+        </div>
+        <span class="sb-label">Client Name / Company</span>
+        <input class="sb-input" id="s-client-name" placeholder="Receiver Name" />
+        <span class="sb-label">Address</span>
+        <input class="sb-input" id="s-client-addr" placeholder="City, State" />
+        <div class="sb-row">
+          <div>
+            <span class="sb-label">Phone</span>
+            <input class="sb-input" id="s-client-phone" placeholder="Phone" />
+          </div>
+          <div>
+            <span class="sb-label">GSTIN</span>
+            <input class="sb-input" id="s-client-gstin" placeholder="GSTIN (opt.)" style="text-transform:uppercase;" />
+          </div>
+        </div>
+        <div style="margin-top:2px;">
+          <span class="sb-label">Previous Due Amount (₹)</span>
+          <input class="sb-input" id="s-client-due" type="number" placeholder="0.00" oninput="onDueInput(this)" style="border-color: rgba(239,68,68,0.4); background: rgba(239,68,68,0.03); color: #ef4444; font-weight: 700;" />
+          <div style="font-size:10px; color:#94a3b8; margin-top:4px;">Auto-filled from Master Data. Edit or clear if fully paid.</div>
+        </div>
+      </div>
+
+      <!-- ── ITEMS / PRODUCTS ── -->
+      <div class="sb-section" id="sb-items-section">
+        <div class="sb-section-title">
+          <span class="material-symbols-outlined" style="font-size:14px">inventory_2</span>
+          Items / Products
+        </div>
+        <div id="mob-items-list"></div>
+        <button id="mob-add-item-btn" class="mob-add-item-btn" type="button" onclick="handleAddItemClick(event)">
+          <span class="material-symbols-outlined" style="font-size:18px">add_circle</span>
+          Add Item
+        </button>
+      </div>
+
+      <!-- ── TAX & CHARGES ── -->
+      <div class="sb-section">
+        <div class="sb-section-title">
+          <span class="material-symbols-outlined" style="font-size:14px">percent</span>
+          Tax &amp; Charges
+        </div>
+        <span class="sb-label">GST Rate</span>
+        <input type="hidden" id="gst-rate" value="0" onchange="recalcAll()" />
+        <input type="hidden" id="tax-type" value="NONE" onchange="recalcAll()" />
+        <select class="sb-input select-styled" id="gst-rate-display" onchange="setTaxType(this.value); recalcAll(); autoSave()">
+          <option value="NONE" selected>None GST 0%</option>
+          <option value="GST5">GST 5%</option>
+          <option value="GST18">GST 18%</option>
+          <option value="IGST5">IGST 5%</option>
+          <option value="IGST18">IGST 18%</option>
+        </select>
+        <div class="toggle-row">
+          <span class="toggle-label">Show QR Code</span>
+          <label class="toggle">
+            <input type="checkbox" id="qr-toggle" onchange="updateQR()" />
+            <div class="toggle-track"></div>
+            <div class="toggle-nub"></div>
+          </label>
+        </div>
+      </div>
+
+    </div><!-- /sidebar -->
+
+    <!-- MAIN — A4 paper preview -->
+    <div id="main">
+      <div id="invoice-paper">
+
+        <!-- HEADER: Logo | Company (center) | Invoice Box -->
+        <div class="paper-header">
+          <div class="paper-logo-section" style="display:flex;align-items:center;justify-content:center;">
+            <div class="brand-logo-icon" style="height:64px;width:64px;display:flex;align-items:center;justify-content:center;background:var(--accent-light);border-radius:12px;padding:8px;border:1px solid var(--border);flex-shrink:0;">
+              <svg viewBox="0 0 100 100" style="width:100%;height:100%;fill:none;stroke:var(--primary);stroke-width:6;stroke-linecap:round;stroke-linejoin:round;">
+                <path d="M35 15 H65 M50 15 V30 M43 30 H57 M30 80 H70 L55 35 V30 H45 V35 L30 80 Z" />
+                <path d="M50 72 C45 62 45 48 50 40 C55 48 55 62 50 72 Z" fill="var(--primary)" />
+              </svg>
+            </div>
+          </div>
+          <div class="paper-company-center">
+            <div class="paper-company-name" id="p-company">AgroChem</div>
+            <div class="paper-company-sub">
+              <span id="p-address">Survey No.207/1, Nr. Balaji Agro, Shapar, Rajkot, Gujarat - 360024</span><br />
+              <span id="p-phone">—</span><span id="p-email-phone-sep"> &nbsp;|&nbsp; </span><span id="p-email">skagro3105@gmail.com</span><br />
+              GSTIN: <span id="p-gstin">24AERFS1718Q1ZB</span>
+            </div>
+          </div>
+          <div class="paper-invoice-box">
+            <div class="invoice-badge">INVOICE</div>
+            <div class="paper-meta">
+              Invoice No: <strong id="p-inv-num">—</strong><br />
+              Date: <strong id="p-inv-date">—</strong><br />
+              <span id="p-due-line" style="display:none">Due: <strong id="p-due-date"></strong><br /></span>
+            </div>
+          </div>
+          <div class="gst-doc-strip" id="p-gst-doc-strip">
+            <span class="gst-doc-copy gst-left">Debit Memo</span>
+            <span class="gst-doc-copy gst-center">Tax Invoice</span>
+            <span class="gst-doc-copy gst-right">Original</span>
+          </div>
+        </div>
+
+        <!-- BILL FROM / BILL TO -->
+        <div class="paper-to">
+          <div>
+            <div class="to-label">Bill From</div>
+            <div class="to-main" id="p-from-name">AgroChem</div>
+            <div class="to-sub" id="p-from-sub">Survey No.207/1, Nr. Balaji Agro, Shapar, Rajkot, Gujarat - 360024</div>
+          </div>
+          <div>
+            <div class="to-label">Bill To</div>
+            <div class="to-main" id="p-client-name">Client Name</div>
+            <div class="to-sub" id="p-client-sub"></div>
+          </div>
+        </div>
+
+        <!-- INTRO -->
+        <div class="paper-intro" id="p-intro">
+          Dear Sir/Mam, Thank you for your valuable inquiry. We are pleased to quote as below:
+        </div>
+
+        <!-- ITEMS TABLE -->
+        <table class="items-table" id="items-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Brand Name</th>
+              <th>Product Name</th>
+              <th>Qty</th>
+              <th>Price</th>
+              <th>Total (₹)</th>
+            </tr>
+          </thead>
+          <tbody id="items-tbody"></tbody>
+        </table>
+
+
+
+        <!-- TOTALS -->
+        <div class="totals-wrap" style="margin-top:16px">
+          <div class="totals-box">
+            <div class="totals-row">
+              <span>Subtotal</span><span id="p-subtotal">₹0.00</span>
+            </div>
+            <div class="totals-row tax-type-row" id="p-taxtype-row" style="display:none;">
+              <span id="p-taxtype-label">GST 5%</span><span>&nbsp;</span>
+            </div>
+            <div class="totals-row tax-detail-row" id="p-cgst-row" style="display:none;">
+              <span id="p-cgst-label">CGST (0%)</span><span id="p-cgst">₹0.00</span>
+            </div>
+            <div class="totals-row tax-detail-row" id="p-sgst-row" style="display:none;">
+              <span id="p-sgst-label">SGST (0%)</span><span id="p-sgst">₹0.00</span>
+            </div>
+            <div class="totals-row tax-detail-row" id="p-igst-row" style="display:none;">
+              <span id="p-igst-label">IGST (0%)</span><span id="p-igst">₹0.00</span>
+            </div>
+            <div class="totals-row" id="p-totalgst-row" style="display:none;">
+              <span>Total GST</span><span id="p-totalgst">₹0.00</span>
+            </div>
+            <div class="totals-row" id="p-due-row" style="display:none;">
+              <span style="color:#ef4444; font-weight:700;">Previous Due</span><span id="p-due-amount" style="color:#ef4444; font-weight:800;">₹0.00</span>
+            </div>
+            <div class="totals-grand">
+              <span>GRAND TOTAL</span><span id="p-grand">₹0.00</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- NOTES/TERMS -->
+        <div class="paper-notes" id="p-terms" style="display:none"></div>
+
+        <!-- FOOTER: Bank + QR + Signature -->
+        <div class="paper-footer">
+          <div class="bank-block" id="bank-block">
+            <div class="bank-title">Payment Details</div>
+            <div class="bank-row"><strong>Bank:</strong> <span id="p-bank-name">—</span></div>
+            <div class="bank-row"><strong>A/C No.:</strong> <span id="p-bank-acc">—</span></div>
+            <div class="bank-row"><strong>IFSC:</strong> <span id="p-bank-ifsc">—</span></div>
+            <div class="bank-row"><strong>UPI:</strong> <span id="p-upi">—</span></div>
+          </div>
+
+          <div class="qr-block" id="qr-block" style="display:none">
+            <div id="qr-canvas" style="width:90px;height:90px;"></div>
+            <div class="qr-label">Scan to Pay</div>
+          </div>
+
+          <div class="sig-block">
+            <div class="sig-label">Authorized Signature</div>
+            <img id="sig-img" src="signature.jpg" alt="Signature"
+              style="max-width:120px;max-height:40px;margin-bottom:6px;border-radius:4px;border:1px solid #e2e8f0;display:block;margin:0 auto;"
+              onerror="this.style.display='none'" />
+            <div class="sig-name" id="p-signatory">AgroChem</div>
+          </div>
+        </div>
+
+      </div><!-- /invoice-paper -->
+    </div><!-- /main -->
+
+  </div><!-- /app -->
+
+  <!-- MASTER ADD/EDIT MODAL -->
+  <div id="client-modal" class="modal"
+    style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
+    <div class="modal-content"
+      style="background:var(--bg-card); color:var(--text-main); padding:20px; border-radius:12px; width:100%; max-width:400px; position:relative;">
+      <span class="close" onclick="closeClientModal()"
+        style="position:absolute; top:15px; right:15px; cursor:pointer; font-size:20px;">&#x2715;</span>
+      <h2 style="margin-bottom:15px; font-size:18px;">Edit Record</h2>
+
+      <label style="font-size:12px;color:var(--text-muted);display:block;margin-top:10px;">Brand / Client Name</label>
+      <input id="modal-client-name" class="sb-input" style="width:100%;margin-top:4px;" />
+
+      <label style="font-size:12px;color:var(--text-muted);display:block;margin-top:10px;">Product Name /
+        Address</label>
+      <input id="modal-client-addr" class="sb-input" style="width:100%;margin-top:4px;" />
+
+      <label style="font-size:12px;color:var(--text-muted);display:block;margin-top:10px;">Packaging / Phone</label>
+      <input id="modal-client-phone" class="sb-input" style="width:100%;margin-top:4px;" />
+
+      <label style="font-size:12px;color:var(--text-muted);display:block;margin-top:10px;">Price (₹) / GSTIN</label>
+      <input id="modal-client-gstin" class="sb-input" style="width:100%;margin-top:4px;" />
+
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">
+        <button class="btn btn-danger" onclick="deleteClientModal()" style="margin-right:auto;">Delete</button>
+        <button class="btn" style="background:transparent;border:1px solid var(--border);color:var(--text-main)"
+          onclick="closeClientModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveClientModal()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main App Script (last, so DOM is ready) -->
+  <script src="js/main.js?v=1.0.3"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</body>
+
+</html>

@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgroChem ERP - Admin Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    (function() {
+      const storedTheme = localStorage.getItem('theme');
+      const initialTheme = storedTheme === 'dark' || storedTheme === 'light' ? storedTheme : 'dark';
+      document.documentElement.setAttribute('data-theme', initialTheme);
+    })();
+  </script>
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: var(--surface-gradient);
+      font-family: 'Space Grotesk', sans-serif;
+      transition: background 0.3s ease;
+      margin: 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Subtle background animations/decorations */
+    .bg-decorator {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(120px);
+      opacity: 0.15;
+      z-index: -1;
+      pointer-events: none;
+    }
+    .bg-decorator-1 {
+      width: 300px;
+      height: 300px;
+      background: var(--accent);
+      top: -50px;
+      left: -50px;
+    }
+    .bg-decorator-2 {
+      width: 400px;
+      height: 400px;
+      background: var(--success);
+      bottom: -100px;
+      right: -100px;
+    }
+
+    .login-container {
+      width: 100%;
+      max-width: 440px;
+      padding: 24px;
+      z-index: 10;
+    }
+
+    .login-card {
+      background: var(--surface-glass);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 44px 40px;
+      box-shadow: var(--shadow-md);
+      transition: var(--transition);
+    }
+
+    .login-header {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+
+    .login-logo {
+      width: 56px;
+      height: 56px;
+      background: var(--accent-light);
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 18px;
+      color: var(--accent);
+      transition: var(--transition);
+    }
+
+    .login-logo svg {
+      width: 26px;
+      height: 26px;
+    }
+
+    .login-title {
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+      letter-spacing: -0.02em;
+    }
+
+    .login-subtitle {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 13px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg-input);
+      color: var(--text-primary);
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: var(--transition);
+    }
+
+    .form-input:focus {
+      border-color: var(--accent);
+      background: var(--surface);
+      box-shadow: 0 0 0 3px var(--accent-light);
+    }
+
+    .login-btn {
+      width: 100%;
+      padding: 13px 18px;
+      background: var(--accent);
+      color: var(--accent-fg);
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .login-btn:hover {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-accent);
+    }
+
+    .login-btn:active {
+      transform: translateY(0);
+    }
+
+    .login-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .error-message {
+      background: rgba(220, 38, 38, 0.08);
+      border: 1px solid var(--danger);
+      color: var(--danger);
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      margin-bottom: 20px;
+      display: none;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .error-message.show {
+      display: flex;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 10px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .security-note {
+      background: rgba(0, 0, 0, 0.03);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 24px;
+      line-height: 1.5;
+    }
+    
+    [data-theme="dark"] .security-note {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    /* Floating Theme Toggler styling */
+    .theme-toggle-btn {
+      position: absolute;
+      top: 24px;
+      right: 24px;
+      z-index: 1000;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: var(--transition);
+      box-shadow: var(--shadow-sm);
+    }
+    .theme-toggle-btn:hover {
+      background: var(--hover-bg);
+      transform: scale(1.05);
+    }
+
+    /* Icon display logic */
+    [data-theme="light"] .theme-icon-sun { display: none; }
+    [data-theme="light"] .theme-icon-moon { display: block !important; }
+    [data-theme="dark"] .theme-icon-sun { display: block !important; }
+    [data-theme="dark"] .theme-icon-moon { display: none; }
+  </style>
+  <link rel="stylesheet" crossorigin href="/assets/style-BQLRryxR.css">
+</head>
+<body>
+
+<!-- Theme decoration blobs -->
+<div class="bg-decorator bg-decorator-1"></div>
+<div class="bg-decorator bg-decorator-2"></div>
+
+<!-- Theme toggle button -->
+<button class="theme-toggle-btn" id="theme-toggle-btn" type="button" aria-label="Switch theme" title="Switch theme" onclick="toggleTheme()">
+  <svg class="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;display:none;"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+  <svg class="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;display:none;"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z"/></svg>
+</button>
+
+<div class="login-container">
+  <div class="login-card">
+    <div class="login-header">
+      <div class="login-logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      </div>
+      <h1 class="login-title">Admin Login</h1>
+      <p class="login-subtitle">AgroChem ERP System</p>
+    </div>
+
+    <div id="error-message" class="error-message">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span id="error-text"></span>
+    </div>
+
+    <form id="login-form" onsubmit="handleLogin(event)">
+      <div class="form-group">
+        <label class="form-label" for="username">Username</label>
+        <input class="form-input" type="text" id="username" placeholder="Enter username" required autocomplete="username">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <input class="form-input" type="password" id="password" placeholder="Enter password" required autocomplete="current-password">
+      </div>
+
+      <button type="submit" class="login-btn" id="login-btn">
+        <span id="btn-text">Login to ERP</span>
+      </button>
+    </form>
+
+    <div class="security-note">
+      <strong>Restricted Access:</strong> This system is restricted to authorized personnel only. Login sessions are monitored and recorded.
+    </div>
+  </div>
+</div>
+
+<script>
+function toggleTheme() {
+  const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+  const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', nextTheme);
+  localStorage.setItem('theme', nextTheme);
+}
+</script>
+<script src="assets/js/database.js?v=41"></script>
+<script>
+async function handleLogin(e) {
+  e.preventDefault();
+  
+  const email = document.getElementById('username').value;
+  const password = document.getElementById('password').value;
+  const btn = document.getElementById('login-btn');
+  const btnText = document.getElementById('btn-text');
+  const errorDiv = document.getElementById('error-message');
+  const errorText = document.getElementById('error-text');
+
+  btn.disabled = true;
+  btnText.innerHTML = '<span class="spinner"></span>Logging in...';
+  errorDiv.classList.remove('show');
+
+  try {
+    const { data, error } = await window.dbClient.auth.signInWithPassword({
+      email: email.includes('@') ? email : `${email}@agro.local`, // fallback if username used
+      password: password
+    });
+
+    if (error) {
+      errorText.textContent = error.message || 'Login failed';
+      errorDiv.classList.add('show');
+      btn.disabled = false;
+      btnText.textContent = 'Login to ERP';
+    } else {
+      window.location.href = '/pages/dashboard.html';
+    }
+  } catch (err) {
+    console.error('Login error:', err);
+    errorText.textContent = 'Connection error. Please try again.';
+    errorDiv.classList.add('show');
+    btn.disabled = false;
+    btnText.textContent = 'Login to ERP';
+  }
+}
+
+// Check if already logged in
+window.dbClient.auth.getSession().then(({ data: { session } }) => {
+  if (session) {
+    window.location.href = '/pages/dashboard.html';
+  }
+});
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</body>
+</html>

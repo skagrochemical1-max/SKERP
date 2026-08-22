@@ -1,0 +1,199 @@
+/* Premium Totals Box Override - Matches user provided mockup - Isolated under gst-mode ONLY */
+
+body.gst-mode .totals-wrap {
+  display: flex !important;
+  justify-content: flex-end !important;
+  margin-top: 16px !important;
+  margin-bottom: 24px !important;
+}
+
+body.gst-mode .totals-box {
+  width: 260px !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 10px !important;
+  overflow: hidden !important;
+  background: #fff !important;
+  box-shadow: none !important;
+}
+
+body.gst-mode .totals-row {
+  display: flex;
+  justify-content: space-between !important;
+  padding: 9px 16px !important;
+  font-size: 13px !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  color: #000 !important;
+}
+
+body.gst-mode .totals-row:last-of-type {
+  border-bottom: none !important;
+}
+
+body.gst-mode .totals-row span:first-child {
+  font-weight: 400 !important;
+}
+
+body.gst-mode .totals-row span:last-child {
+  font-weight: 600 !important;
+  color: #000 !important;
+}
+
+/* Specific styling for Previous Due inside the box */
+body.gst-mode #p-due-row {
+  background: #fffafa !important; /* Very subtle red tint */
+}
+
+body.gst-mode #p-due-row span {
+  color: #ef4444 !important; /* Keep the red warning color but integrated */
+}
+
+body.gst-mode #p-due-row span:last-child {
+  font-weight: 800 !important;
+}
+
+body.gst-mode .totals-grand {
+  display: flex;
+  justify-content: space-between !important;
+  padding: 12px 16px !important;
+  background: var(--primary) !important;
+  color: var(--paper-bg) !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0 !important;
+}
+
+body.gst-mode .totals-grand span:last-child {
+  font-size: 15px !important;
+}
+
+/* Adjust sidebar due input to look less "broken" and more "integrated" in GST mode */
+body.gst-mode #s-client-due {
+  border-color: #ef4444 !important;
+  background: #fff5f5 !important;
+  color: #ef4444 !important;
+  font-weight: 700 !important;
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.1) !important;
+}
+
+/* GST Invoicing Visibility Rules */
+body:not(.gst-mode) .gst-only { display: none !important; }
+body.gst-mode .nongst-only { display: none !important; }
+
+/* Billing Mode Segmented Buttons */
+.billing-mode-btn {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 130px !important;
+  padding: 12px 16px !important;
+  border: 1px solid var(--border) !important;
+  background: var(--bg-card) !important;
+  color: var(--text-main) !important;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  outline: none !important;
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.12) !important;
+}
+.billing-mode-btn:hover {
+  background: var(--accent-light) !important;
+}
+.billing-mode-btn.active {
+  background: var(--primary) !important;
+  color: var(--bg-card) !important;
+  border-color: var(--primary) !important;
+  box-shadow: 0 10px 25px var(--accent-light) !important;
+}
+.billing-mode-btn:focus,
+.billing-mode-btn:active,
+.billing-mode-btn:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Global page scroll cleanup: only sidebar and preview should scroll */
+html, body {
+  min-height: 100%;
+  min-width: 100%;
+  overflow: hidden !important;
+}
+@media (min-width: 769px) {
+  #app {
+    height: calc(100vh - 64px) !important;
+  }
+}
+@media (max-width: 768px) {
+  #app {
+    height: auto !important;
+    min-height: calc(100vh - 56px) !important;
+    overflow: visible !important;
+  }
+  html, body {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior-y: auto !important;
+  }
+  #sidebar, #main {
+    height: auto !important;
+    overflow-y: visible !important;
+  }
+}
+#app {
+  overflow: hidden !important;
+}
+#sidebar, #main {
+  overflow-y: auto !important;
+}
+#toolbar, #toolbar-right, .toolbar-actions {
+  flex-wrap: wrap !important;
+}
+html, body, #app, #sidebar, #main {
+  width: 100% !important;
+}
+
+/* Native Anchor Redirect Button Resets for Mobile */
+a.mob-tab, a.btn, a.back-arrow-tool {
+  text-decoration: none !important;
+  color: inherit !important;
+}
+
+/* Hover scales for New GST buttons */
+#desk-new-gst-btn, #mob-new-gst-btn {
+  transition: transform 0.2s ease;
+}
+#desk-new-gst-btn:hover, #mob-new-gst-btn:hover {
+  transform: scale(1.05);
+}
+
+/* Layout and mobile fix: prevent sidebar/table overflow in laptop view */
+html, body, #app, #sidebar, #main {
+  overflow-x: hidden !important;
+}
+@media (min-width: 769px) {
+  #sidebar {
+    min-width: 280px !important;
+    max-width: 320px !important;
+  }
+}
+.sb-row {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.sb-section,
+.sb-row,
+.sb-input,
+.select-styled {
+  min-width: 0 !important;
+  overflow-wrap: anywhere !important;
+}
+.items-table {
+  table-layout: fixed !important;
+}
+.items-table thead th,
+.items-table tbody td {
+  word-break: break-word !important;
+}
+#toolbar .toolbar-actions,
+#toolbar-right {
+  flex-wrap: wrap;
+  gap: 8px;
+}

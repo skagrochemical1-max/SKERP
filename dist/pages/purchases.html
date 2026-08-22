@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgroChem ERP — Purchases</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" crossorigin href="/assets/style-BQLRryxR.css">
+  <link rel="stylesheet" crossorigin href="/assets/tables-BwTHrusJ.css">
+  <link rel="stylesheet" crossorigin href="/assets/responsive-C44n9ewS.css">
+  <link rel="stylesheet" crossorigin href="/assets/search-select-DHBt09kF.css">
+</head>
+<body>
+<div class="app-layout" id="app-layout">
+  <script src="../assets/js/shared-layout.js?v=41"></script>
+  <script>document.addEventListener('DOMContentLoaded',()=>LAYOUT.injectLayout('Purchases','Purchases'))</script>
+  <main class="main-content" id="main-content">
+    <div class="page-body">
+      <div class="page-header">
+        <div class="page-header-left"><h2>Purchase Orders</h2><p>Manage procurement and supply chain orders</p></div>
+        <div class="page-header-right">
+
+          <button class="btn btn-primary" onclick="openAdd()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>New Purchase</button>
+        </div>
+      </div>
+      <div class="table-wrap data-table-wrap-mobile">
+        <div class="table-toolbar">
+          <div class="table-toolbar-left">
+            <div class="table-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input id="search-input" placeholder="Search purchases…"></div>
+          </div>
+          <div class="table-toolbar-right"><span class="text-sm text-muted" id="total-info">Loading…</span></div>
+        </div>
+        <table class="data-table" id="purchases-table">
+          <thead><tr><th><input type="checkbox"></th><th>Purchase No</th><th>Invoice No</th><th>Supplier</th><th>Items / Products</th><th>Date</th><th>Total</th><th>Paid</th><th>Balance</th><th>Actions</th></tr></thead>
+          <tbody><tr><td colspan="10"><div class="empty-state"><div class="spinner" style="margin:0 auto"></div></div></td></tr></tbody>
+        </table>
+        <div class="pagination"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="modal-overlay" id="purchase-modal">
+  <div class="modal modal-xl">
+    <div class="modal-header"><span class="modal-title" id="modal-title">New Purchase Order</span><button class="modal-close" onclick="APP.closeModal('purchase-modal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <form id="purchase-form" onsubmit="return false">
+        <section class="product-form-card">
+          <div class="product-form-card-head">
+            <h4>Purchase Invoice Details</h4>
+            <p>Declare supplier invoice credentials, transaction dates, and select raw material provider.</p>
+          </div>
+          <div class="form-grid product-form-grid">
+            <div class="form-group"><label class="form-label">Invoice No</label><input class="form-input" name="invoice_no" placeholder="e.g. INV/24/001"></div>
+            <div class="form-group"><label class="form-label">Date</label><input class="form-input" name="date" id="purchase-date-field" type="date"></div>
+            <div class="form-group"><label class="form-label">Supplier <span class="required">*</span></label>
+              <select class="form-select" name="supplier_id" id="supplier-select" data-autocomplete data-party-type="supplier">
+                <option value="">Select Supplier…</option>
+              </select>
+            </div>
+            <div class="form-group"><label class="form-label">Due Date</label><input class="form-input" name="due_date" type="date"></div>
+          </div>
+        </section>
+
+        <section class="product-form-card">
+          <div class="product-form-card-head">
+            <h4>Payment & Notes</h4>
+            <p>Define paid out funds, operational observations, and inventory delivery settings.</p>
+          </div>
+          <div class="form-grid product-form-grid">
+            <div class="form-group"><label class="form-label">Amount Paid (₹)</label><input class="form-input" name="paid_amount" type="number" min="0" step="0.01" placeholder="0.00"></div>
+            <div class="form-group form-col-full"><label class="form-label">Notes</label><textarea class="form-textarea" name="notes" rows="2"></textarea></div>
+            <div class="form-group form-col-full"><div style="padding:12px 14px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.02);font-size:12px;color:var(--text-muted)">Only purchases marked <strong style="color:var(--text-primary)">Delivered</strong> update inventory batches and FIFO costing.</div></div>
+          </div>
+        </section>
+
+        <section class="product-form-card">
+          <div class="product-form-card-head">
+            <h4>Line Items & Totals</h4>
+            <p>Declare batch details, expiries, quantities, and raw unit pricing.</p>
+          </div>
+          <div class="line-items-wrap"><table class="line-items-table">
+            <thead><tr>
+              <th style="width:25%">Item Name</th>
+              <th style="width:15%">Batch #</th>
+              <th style="width:15%">Expiry Date</th>
+              <th style="width:10%">Qty</th>
+              <th style="width:15%">Unit Price (₹)</th>
+              <th style="width:15%">Total</th>
+              <th style="width:5%"></th>
+            </tr></thead>
+            <tbody id="purchase-items-tbody"></tbody>
+          </table></div>
+          <button type="button" class="add-line-btn" style="margin-top: 10px;" onclick="addPurchaseItem()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Item</button>
+          <div class="summary-row"><div class="summary-box"><div class="summary-line"><span class="label">Total</span><span class="value" id="purchase-total-display">₹0.00</span></div></div></div>
+        </section>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="APP.closeModal('purchase-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="savePurchase()">Save Purchase</button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/database.js?v=41"></script>
+<script src="../assets/js/utils.js?v=41"></script>
+<script src="../assets/js/components/search-select.js?v=41"></script>
+<script src="../assets/js/app.js?v=41"></script><script src="../assets/js/purchases.js?v=41"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</body></html>

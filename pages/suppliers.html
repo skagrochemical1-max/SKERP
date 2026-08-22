@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgroChem ERP — Suppliers</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+      <link rel="stylesheet" href="../assets/css/style.css?v=41"><link rel="stylesheet" href="../assets/css/tables.css?v=41"><link rel="stylesheet" href="../assets/css/forms.css?v=41"><link rel="stylesheet" href="../assets/css/responsive.css?v=41">
+</head>
+<body>
+<div class="app-layout" id="app-layout">
+  <script src="../assets/js/shared-layout.js?v=41"></script>
+  <script>document.addEventListener('DOMContentLoaded',()=>LAYOUT.injectLayout('Suppliers','Suppliers'))</script>
+  <main class="main-content" id="main-content">
+    <div class="page-body">
+      <div class="page-header">
+        <div class="page-header-left"><h2>Suppliers</h2><p>Manage supplier accounts and payment terms</p></div>
+        <div class="page-header-right">
+
+          <button class="btn btn-primary" onclick="openAdd()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add Supplier</button>
+        </div>
+      </div>
+      <div class="table-wrap data-table-wrap-mobile">
+        <div class="table-toolbar">
+          <div class="table-toolbar-left">
+            <div class="table-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input id="search-input" placeholder="Search suppliers…"></div>
+          </div>
+          <div class="table-toolbar-right"><span class="text-sm text-muted" id="total-info">Loading…</span></div>
+        </div>
+        <table class="data-table" id="suppliers-table">
+          <thead><tr><th><input type="checkbox"></th><th>Name</th><th>Company</th><th>Contact</th><th>City</th><th>Payment Terms</th><th>Actions</th></tr></thead>
+          <tbody><tr><td colspan="8"><div class="empty-state"><div class="spinner" style="margin:0 auto"></div></div></td></tr></tbody>
+        </table>
+        <div class="pagination"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="modal-overlay" id="supplier-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header"><span class="modal-title" id="modal-title">Add Supplier</span><button class="modal-close" onclick="APP.closeModal('supplier-modal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <form id="supplier-form" onsubmit="return false">
+        <section class="product-form-card">
+          <div class="product-form-card-head">
+            <h4>Basic Information</h4>
+            <p>Define supplier company details and primary contacts.</p>
+          </div>
+          <div class="form-grid product-form-grid">
+            <div class="form-group form-col-full">
+              <label class="form-label">Supplier Name <span class="required">*</span></label>
+              <input class="form-input" name="name" placeholder="Supplier company name">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Contact</label>
+              <input class="form-input" name="contact" placeholder="+91 9876543210">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <input class="form-input" name="email" type="email" placeholder="supplier@example.com">
+            </div>
+            <div class="form-group form-col-full">
+              <label class="form-label">Company Name</label>
+              <input class="form-input" name="company_name" placeholder="Full legal company name">
+            </div>
+          </div>
+        </section>
+
+        <section class="product-form-card">
+          <div class="product-form-card-head">
+            <h4>Address & Commercial Terms</h4>
+            <p>Declare business warehouse address, GSTIN registration, and payment due terms.</p>
+          </div>
+          <div class="form-grid product-form-grid">
+            <div class="form-group form-col-full">
+              <label class="form-label">Address</label>
+              <input class="form-input" name="address" placeholder="Street address">
+            </div>
+            <div class="form-group">
+              <label class="form-label">City</label>
+              <input class="form-input" name="city" placeholder="City">
+            </div>
+            <div class="form-group">
+              <label class="form-label">GST Number</label>
+              <input class="form-input" name="gst" placeholder="24AAAAA1234A1Z5">
+            </div>
+            <div class="form-group form-col-full">
+              <label class="form-label">Payment Terms (days)</label>
+              <input class="form-input" name="payment_terms" type="number" min="0" placeholder="30">
+            </div>
+          </div>
+        </section>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="APP.closeModal('supplier-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSupplier()">Save Supplier</button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/database.js?v=41"></script><script src="../assets/js/utils.js?v=41"></script><script src="../assets/js/app.js?v=41"></script><script src="../assets/js/suppliers.js?v=41"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</body></html>

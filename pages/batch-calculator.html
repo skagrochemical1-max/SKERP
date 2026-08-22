@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgroChem ERP — Batch Calculator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/style.css?v=41"><link rel="stylesheet" href="../assets/css/forms.css?v=41"><link rel="stylesheet" href="../assets/css/tables.css?v=41"><link rel="stylesheet" href="../assets/css/responsive.css?v=41"><link rel="stylesheet" href="../assets/css/components/search-select.css?v=41">
+</head>
+<body>
+<div class="app-layout" id="app-layout">
+  <script src="../assets/js/shared-layout.js?v=41"></script>
+  <script>document.addEventListener('DOMContentLoaded',()=>LAYOUT.injectLayout('Batch Calculator','Manufacturing / Batch Calculator'))</script>
+  <main class="main-content" id="main-content">
+    <div class="page-body">
+      <div class="page-header">
+        <div class="page-header-left"><h2>Batch Calculator</h2><p>Scale formulation recipes to any batch size and check stock availability</p></div>
+        <div class="page-header-right"><a href="formulations.html" class="btn btn-secondary btn-sm">Manage Formulations</a></div>
+      </div>
+
+      <div class="grid grid-2">
+        <!-- Input Panel -->
+        <div class="card">
+          <div class="card-header"><div class="card-title">Select Formulation & Batch Size</div></div>
+          <div class="card-body">
+            <div class="form-group" style="margin-bottom:16px">
+              <label class="form-label">Formulation <span class="required">*</span></label>
+              <select class="form-select" id="formulation-select"><option value="">Select a formulation…</option></select>
+            </div>
+            <div class="form-group" style="margin-bottom:24px">
+              <label class="form-label">Target Batch Size <span class="required">*</span></label>
+              <div style="display:flex;gap:10px;align-items:center">
+                <input class="form-input" type="number" id="batch-size-input" min="0.1" step="0.1" placeholder="500">
+                <span class="badge badge-purple" id="batch-unit-display" style="min-width:50px;text-align:center">Unit</span>
+              </div>
+              <div class="form-hint">Original batch size will be auto-filled when you select a formulation.</div>
+            </div>
+            <button class="btn btn-primary w-full" onclick="calculateBatch()" style="justify-content:center">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/></svg>
+              Calculate Batch Requirements
+            </button>
+          </div>
+        </div>
+
+        <!-- Help Panel -->
+        <div class="card">
+          <div class="card-header"><div class="card-title">How to Use</div></div>
+          <div class="card-body">
+            <div style="display:flex;flex-direction:column;gap:16px">
+              <div style="display:flex;gap:12px;align-items:flex-start">
+                <div style="width:28px;height:28px;border-radius:50%;background:var(--accent-light);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0">1</div>
+                <div><div style="font-size:13px;font-weight:600">Select a Formulation</div><div style="font-size:12px;color:var(--text-muted)">Choose a predefined chemical formulation recipe</div></div>
+              </div>
+              <div style="display:flex;gap:12px;align-items:flex-start">
+                <div style="width:28px;height:28px;border-radius:50%;background:var(--accent-light);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0">2</div>
+                <div><div style="font-size:13px;font-weight:600">Enter Target Batch Size</div><div style="font-size:12px;color:var(--text-muted)">The original batch size auto-fills — modify as needed</div></div>
+              </div>
+              <div style="display:flex;gap:12px;align-items:flex-start">
+                <div style="width:28px;height:28px;border-radius:50%;background:var(--accent-light);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0">3</div>
+                <div><div style="font-size:13px;font-weight:600">Calculate</div><div style="font-size:12px;color:var(--text-muted)">See scaled ingredient quantities and stock availability</div></div>
+              </div>
+            </div>
+            <div style="margin-top:20px;padding:12px;background:var(--warning-light);border-radius:var(--radius-sm);font-size:12px;color:var(--accent-dark);line-height:1.6">
+              <strong>Note:</strong> Stock availability is checked against current inventory. If marked "Insufficient", raise a purchase order before proceeding.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div id="calc-result" style="margin-top:24px"></div>
+    </div>
+  </main>
+</div>
+
+<script src="../assets/js/database.js?v=41"></script><script src="../assets/js/utils.js?v=41"></script><script src="../assets/js/components/search-select.js?v=41"></script><script src="../assets/js/app.js?v=41"></script><script src="../assets/js/calculator.js?v=41"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</body></html>

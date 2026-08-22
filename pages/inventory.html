@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgroChem ERP — Inventory</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/style.css?v=41"><link rel="stylesheet" href="../assets/css/tables.css?v=41"><link rel="stylesheet" href="../assets/css/forms.css?v=41"><link rel="stylesheet" href="../assets/css/responsive.css?v=41"><link rel="stylesheet" href="../assets/css/components/search-select.css?v=41">
+</head>
+<body>
+<div class="app-layout" id="app-layout">
+  <script src="../assets/js/shared-layout.js?v=41"></script>
+  <script>document.addEventListener('DOMContentLoaded',()=>LAYOUT.injectLayout('Inventory','Inventory'))</script>
+
+  <main class="main-content" id="main-content">
+    <div class="page-body">
+      <div class="page-header">
+        <div class="page-header-left"><h2>Inventory Dashboard</h2><p>Monitor stock levels, reorder alerts, and capacity</p></div>
+        <div class="page-header-right">
+          <button type="button" class="btn btn-secondary" id="manage-inventory-options-btn" onclick="openInventoryOptionManager()">Manage Options</button>
+          <button type="button" class="btn btn-primary" onclick="openAdd()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add Item</button>
+        </div>
+      </div>
+      
+      <div class="table-tabs">
+        <button class="tab-btn active" data-tab="Technical">Technicals</button>
+        <button class="tab-btn" data-tab="Bottles">Bottles</button>
+        <button class="tab-btn" data-tab="Boxes">Boxes</button>
+        <button class="tab-btn" data-tab="Labels">Labels</button>
+        <button class="tab-btn" data-tab="Others">Others</button>
+      </div>
+      <div class="table-wrap data-table-wrap-mobile">
+        <div class="table-toolbar">
+          <div class="table-toolbar-left">
+            <div class="table-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input id="search-input" placeholder="Search inventory…"></div>
+          </div>
+          <div class="table-toolbar-right"><span class="text-sm text-muted" id="total-info">Loading…</span></div>
+        </div>
+        <table class="data-table" id="inventory-table">
+          <thead><tr>
+            <th><input type="checkbox"></th>
+            <th>Item Name</th><th>Category</th><th>Total Stock</th><th>Unit</th><th>Avg Cost (₹)</th><th>Total Value (₹)</th><th>Status</th><th>Actions</th>
+          </tr></thead>
+          <tbody><tr><td colspan="8"><div class="empty-state"><div class="spinner" style="margin:0 auto"></div></div></td></tr></tbody>
+        </table>
+        <div class="pagination"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Category Selector Modal -->
+<div class="modal-overlay" id="category-selector-modal">
+  <div class="modal" style="max-width: 450px;">
+    <div class="modal-header">
+      <span class="modal-title">Select Item Category</span>
+      <button class="modal-close" onclick="APP.closeModal('category-selector-modal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px;">
+        <button class="btn btn-secondary" style="height: 100px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--border); background: rgba(255,255,255,0.01);" onclick="selectCategoryForAdd('Technical')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:24px; height:24px; color: var(--primary);"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          <span style="font-weight: 600; font-size: 13px;">Technical</span>
+        </button>
+        <button class="btn btn-secondary" style="height: 100px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--border); background: rgba(255,255,255,0.01);" onclick="selectCategoryForAdd('Bottles')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:24px; height:24px; color: var(--primary);"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          <span style="font-weight: 600; font-size: 13px;">Bottles</span>
+        </button>
+        <button class="btn btn-secondary" style="height: 100px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--border); background: rgba(255,255,255,0.01);" onclick="selectCategoryForAdd('Boxes')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:24px; height:24px; color: var(--primary);"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg>
+          <span style="font-weight: 600; font-size: 13px;">Boxes</span>
+        </button>
+        <button class="btn btn-secondary" style="height: 100px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--border); background: rgba(255,255,255,0.01);" onclick="selectCategoryForAdd('Labels')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:24px; height:24px; color: var(--primary);"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="15" y2="13"/></svg>
+          <span style="font-weight: 600; font-size: 13px;">Labels</span>
+        </button>
+        <button class="btn btn-secondary" style="height: 100px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--border); background: rgba(255,255,255,0.01);" onclick="selectCategoryForAdd('Others')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:24px; height:24px; color: var(--primary);"><circle cx="12" cy="12" r="10"/></svg>
+          <span style="font-weight: 600; font-size: 13px;">Others</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Technical Item Modal -->
+<div class="modal-overlay" id="technical-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-title" id="technical-modal-title">Add Technical Item</span>
+      <button class="modal-close" onclick="APP.closeModal('technical-modal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body" style="padding-top: 0;">
+      <div class="product-step-header">
+        <button class="product-step-pill active" id="technical-step-pill-1" onclick="goToInventoryStep('technical', 1)">Step 1 - Basic Info</button>
+        <button class="product-step-pill" id="technical-step-pill-2" onclick="goToInventoryStep('technical', 2)">Step 2 - Opening Stock</button>
+      </div>
+      <form id="technical-form" onsubmit="return false">
+        <div class="product-step-panel active" data-step-panel="1">
+          <section class="product-form-card">
+            <div class="product-form-card-head">
+              <h4>Basic Information</h4>
+              <p>Define classification, measuring unit, and item details.</p>
+            </div>
+            <div class="form-grid product-form-grid">
+              <div class="form-group">
+                <label class="form-label">Unit</label>
+                <select class="form-select" name="unit" id="tech-unit-select">
+                  <option>Nos</option><option>Gram</option><option>Kg</option><option>Litre</option><option>Ml</option>
+                </select>
+              </div>
+              <div class="form-group form-col-full" style="position:relative">
+                <label class="form-label">Technical Item Name <span class="required">*</span></label>
+                <input class="form-input" name="name" id="tech-name-input" placeholder="Search catalog stock or type a custom name" autocomplete="off">
+                <div id="tech-name-suggestions" class="search-suggestions" role="listbox"></div>
+              </div>
+            </div>
+          </section>
+        </div>
+        <div class="product-step-panel" data-step-panel="2">
+        <section class="product-form-card opening-stock-section">
+          <div class="product-form-card-head">
+            <h4>Opening Stock & Cost</h4>
+            <p>Declare initial quantities, unit purchase price, and batch number reference.</p>
+          </div>
+          <div class="form-grid product-form-grid">
+            <div class="form-group">
+              <label class="form-label">Opening Stock Qty</label>
+              <input type="number" class="form-input" name="opening_qty" placeholder="e.g. 100" min="0" step="0.01">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Opening Cost / Unit (₹)</label>
+              <input type="number" class="form-input" name="opening_cost" placeholder="e.g. 450" min="0" step="0.01">
+            </div>
+            <div class="form-group form-col-full">
+              <label class="form-label">Opening Batch No / Ref</label>
+              <input class="form-input" name="opening_batch_no" placeholder="e.g. OPEN-BATCH-01">
+            </div>
+          </div>
+        </section>
+          <section class="product-form-card">
+            <div class="product-form-card-head">
+              <h4>Additional Information</h4>
+              <p>Optional description or internal notes.</p>
+            </div>
+            <div class="form-grid product-form-grid">
+              <div class="form-group form-col-full">
+                <label class="form-label">Description</label>
+                <textarea class="form-textarea" name="description" rows="2" placeholder="Item details..."></textarea>
+              </div>
+            </div>
+          </section>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="APP.closeModal('technical-modal')">Cancel</button>
+      <button class="btn btn-secondary" id="technical-prev-btn" style="display: none;" onclick="goToInventoryStep('technical', 1)">Back</button>
+      <button class="btn btn-primary" id="technical-next-btn" onclick="inventoryFormNextStep('technical')">Next</button>
+      <button class="btn btn-primary" id="technical-save-btn" style="display: none;" onclick="saveTechnicalItem()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bottle Item Modal -->
+<div class="modal-overlay" id="bottle-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-title" id="bottle-modal-title">Add Bottle Option</span>
+      <button class="modal-close" onclick="APP.closeModal('bottle-modal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body" style="padding-top: 0;">
+      <div class="product-step-header">
+        <button class="product-step-pill active" id="bottle-step-pill-1" onclick="goToInventoryStep('bottle', 1)">Step 1 - Basic Info</button>
+        <button class="product-step-pill" id="bottle-step-pill-2" onclick="goToInventoryStep('bottle', 2)">Step 2 - Opening Stock</button>
+      </div>
+      <form id="bottle-form" onsubmit="return false">
+        <div class="product-step-panel active" data-step-panel="1">
+          <section class="product-form-card">
+            <div class="product-form-card-head">
+              <h4>Bottle Specifications</h4>
+              <p>Select bottle type category and variant capacity sizing.</p>
+            </div>
+            <div class="form-grid product-form-grid">
+              <div class="form-group">
+                <label class="form-label">Bottle Type <span class="required">*</span></label>
+                <select class="form-select" name="bottle_type" id="tech-bottle-type-select"></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Bottle Size <span class="required">*</span></label>
+                <select class="form-select" name="bottle_size" id="tech-bottle-size-select"></select>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="product-step-panel" data-step-panel="2">
+          <section class="product-form-card opening-stock-section">
+            <div class="product-form-card-head">
+              <h4>Opening Stock & Cost</h4>
+              <p>Declare initial quantities, unit purchase price, and batch number reference.</p>
+            </div>
+            <div class="form-grid product-form-grid">
+              <div class="form-group">
+                <label class="form-label">Opening Stock Qty</label>
+                <input type="number" class="form-input" name="opening_qty" placeholder="e.g. 100" min="0" step="0.01">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Opening Cost / Unit (₹)</label>
+                <input type="number" class="form-input" name="opening_cost" placeholder="e.g. 12" min="0" step="0.01">
+              </div>
+              <div class="form-group form-col-full">
+                <label class="form-label">Opening Batch No / Ref</label>
+                <input class="form-input" name="opening_batch_no" placeholder="e.g. BOTTLE-OPEN-01">
+              </div>
+            </div>
+          </section>
+
+          <section class="product-form-card">
+            <div class="product-form-card-head">
+              <h4>Additional Information</h4>
+              <p>Optional description or internal notes.</p>
+            </div>
+            <div class="form-grid product-form-grid">
+              <div class="form-group form-col-full">
+                <label class="form-label">Description</label>
+                <textarea class="form-textarea" name="description" rows="2" placeholder="Bottle details..."></textarea>
+              </div>
+            </div>
+          </section>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="APP.closeModal('bottle-modal')">Cancel</button>
+      <button class="btn btn-secondary" id="bottle-prev-btn" style="display: none;" onclick="goToInventoryStep('bottle', 1)">Back</button>
+      <button class="btn btn-primary" id="bottle-next-btn" onclick="inventoryFormNextStep('bottle')">Next</button>
+      <button class="btn btn-primary" id="bottle-save-btn" style="display: none;" onclick="saveBottleItem()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Box Item Modal -->
+<div class="modal-overlay" id="box-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-title" id="box-modal-title">Add Box Option</span>
+      <button class="modal-close" onclick="APP.closeModal('box-modal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body" style="padding-top: 0;">
+      <div class="product-step-header">
+        <button class="product-step-pill active" id="box-step-pill-1" onclick="goToInventoryStep('box', 1)">Step 1 - Basic Info</button>
+        <button class="product-step-pill" id="box-step-pill-2" onclick="goToInventoryStep('box', 2)">Step 2 - Opening Stock</button>
+      </div>
+      <form id="box-form" onsubmit="return false">
+        <div class="product-step-panel active" data-step-panel="1">
+          <section class="product-form-card">
+            <div class="product-form-card-head">
+              <h4>Box Specifications</h4>
+              <p>Select box packaging type and standard pack capacity sizing.</p>
+            </div>
+            <div class="form-grid product-form-grid">
+              <div class="form-group">
+                <label class="form-label">Box Type <span class="required">*</span></label>
+                <select class="form-select" name="box_type" id="tech-box-type-select"></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Box Size <span class="required">*</span></label>
+                <select class="form-select" name="box_size" id="tech-box-size-select"></select>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="product-step-panel" data-step-panel="2">
+          <section class="product-form-card opening-stock-section">
+            <div class="product-form-card-head">
+              <h4>Opening Stock & Cost</h4>
+              <p>Declare initial quantities, unit purchase price, and batch number reference.</p>
+            </div>
+            <div class="form-grid product-form-grid">
+              <div class="form-group">
+                <label class="form-label">Opening Stock Qty</label>
+                <input type="number" class="form-input" name="opening_qty" placeholder="e.g. 100" min="0" step="0.01">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Opening Cost / Unit (₹)</label>
+                <input type="number" class="form-input" name="opening_cost" placeholder="e.g. 20" min="0" step="0.01">
+              </div>
+              <div class="form-group form-col-full">
+                <label class="form-label">Opening Batch No / Ref</label>
+                <input class="form-input" name="opening_batch_no" placeholder="e.g. BOX-OPEN-01">
+              </div>
+            </div>
+          </section>
+
+          <section class="product-form-card">
+            <div class="product-form-card-head">
+              <h4>Additional Information</h4>
+              <p>Optional description or internal notes.</p>
+            </div>
+            <div class="form-grid product-form-grid">
+              <div class="form-group form-col-full">
+                <label class="form-label">Description</label>
+                <textarea class="form-textarea" name="description" rows="2" placeholder="Box details..."></textarea>
+              </div>
+            </div>
+          </section>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="APP.closeModal('box-modal')">Cancel</button>
+      <button class="btn btn-secondary" id="box-prev-btn" style="display: none;" onclick="goToInventoryStep('box', 1)">Back</button>
+      <button class="btn btn-primary" id="box-next-btn" onclick="inventoryFormNextStep('box')">Next</button>
+      <button class="btn btn-primary" id="box-save-btn" style="display: none;" onclick="saveBoxItem()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Label Item Modal -->
+<div class="modal-overlay" id="label-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-title" id="label-modal-title">Add Label Option</span>
+      <button class="modal-close" onclick="APP.closeModal('label-modal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body" style="padding-top: 0;">
+      <div class="product-step-header">
+        <button class="product-step-pill active" id="label-step-pill-1" onclick="goToInventoryStep('label', 1)">Step 1 - Basic Info</button>
+        <button class="product-step-pill" id="label-step-pill-2" onclick="goToInventoryStep('label', 2)">Step 2 - Opening Stock</button>
+      </div>
+      <form id="label-form" onsubmit="return false">
+        <div class="product-step-panel active" data-step-panel="1">
+          <section class="product-form-card">
+            <div class="product-form-card-head">
+              <h4>Label Specifications</h4>
+              <p>Select label type category and variant capacity sizing.</p>
+            </div>
+            <div class="form-grid product-form-grid">
+              <div class="form-group">
+                <label class="form-label">Label Type <span class="required">*</span></label>
+                <select class="form-select" name="label_type" id="tech-label-type-select"></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Label Size <span class="required">*</span></label>
+                <select class="form-select" name="label_size" id="tech-label-size-select"></select>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="product-step-panel" data-step-panel="2">
+          <section class="product-form-card opening-stock-section">
+            <div class="product-form-card-head">
+              <h4>Opening Stock & Cost</h4>
+              <p>Declare initial quantities, unit purchase price, and batch number reference.</p>
+            </div>
+            <div class="form-grid product-form-grid">
+              <div class="form-group">
+                <label class="form-label">Opening Stock Qty</label>
+                <input type="number" class="form-input" name="opening_qty" placeholder="e.g. 100" min="0" step="0.01">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Opening Cost / Unit (₹)</label>
+                <input type="number" class="form-input" name="opening_cost" placeholder="e.g. 2" min="0" step="0.01">
+              </div>
+              <div class="form-group form-col-full">
+                <label class="form-label">Opening Batch No / Ref</label>
+                <input class="form-input" name="opening_batch_no" placeholder="e.g. LABEL-OPEN-01">
+              </div>
+            </div>
+          </section>
+
+          <section class="product-form-card">
+            <div class="product-form-card-head">
+              <h4>Additional Information</h4>
+              <p>Optional description or internal notes.</p>
+            </div>
+            <div class="form-grid product-form-grid">
+              <div class="form-group form-col-full">
+                <label class="form-label">Description</label>
+                <textarea class="form-textarea" name="description" rows="2" placeholder="Label details..."></textarea>
+              </div>
+            </div>
+          </section>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="APP.closeModal('label-modal')">Cancel</button>
+      <button class="btn btn-secondary" id="label-prev-btn" style="display: none;" onclick="goToInventoryStep('label', 1)">Back</button>
+      <button class="btn btn-primary" id="label-next-btn" onclick="inventoryFormNextStep('label')">Next</button>
+      <button class="btn btn-primary" id="label-save-btn" style="display: none;" onclick="saveLabelItem()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Others Item Modal -->
+<div class="modal-overlay" id="other-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-title" id="other-modal-title">Add Other Item</span>
+      <button class="modal-close" onclick="APP.closeModal('other-modal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body" style="padding-top: 0;">
+      <div class="product-step-header">
+        <button class="product-step-pill active" id="other-step-pill-1" onclick="goToInventoryStep('other', 1)">Step 1 - Basic Info</button>
+        <button class="product-step-pill" id="other-step-pill-2" onclick="goToInventoryStep('other', 2)">Step 2 - Opening Stock</button>
+      </div>
+      <form id="other-form" onsubmit="return false">
+        <div class="product-step-panel active" data-step-panel="1">
+          <section class="product-form-card">
+            <div class="product-form-card-head">
+              <h4>Basic Information</h4>
+              <p>Define classification, measuring unit, and item details.</p>
+            </div>
+            <div class="form-grid product-form-grid">
+              <div class="form-group">
+                <label class="form-label">Unit <span class="required">*</span></label>
+                <input class="form-input" name="unit" placeholder="e.g. Nos, Bag, Roll">
+              </div>
+              <div class="form-group form-col-full" style="position:relative">
+                <label class="form-label">Item Name <span class="required">*</span></label>
+                <input class="form-input" name="name" id="other-name-input" placeholder="Search catalog stock or type a custom name" autocomplete="off">
+                <div id="other-name-suggestions" class="search-suggestions" role="listbox"></div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="product-step-panel" data-step-panel="2">
+          <section class="product-form-card opening-stock-section">
+            <div class="product-form-card-head">
+              <h4>Opening Stock & Cost</h4>
+              <p>Declare initial quantities, unit purchase price, and batch number reference.</p>
+            </div>
+            <div class="form-grid product-form-grid">
+              <div class="form-group">
+                <label class="form-label">Opening Stock Qty</label>
+                <input type="number" class="form-input" name="opening_qty" placeholder="e.g. 100" min="0" step="0.01">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Opening Cost / Unit (₹)</label>
+                <input type="number" class="form-input" name="opening_cost" placeholder="e.g. 150" min="0" step="0.01">
+              </div>
+              <div class="form-group form-col-full">
+                <label class="form-label">Opening Batch No / Ref</label>
+                <input class="form-input" name="opening_batch_no" placeholder="e.g. OTHER-OPEN-01">
+              </div>
+            </div>
+          </section>
+
+          <section class="product-form-card">
+            <div class="product-form-card-head">
+              <h4>Additional Information</h4>
+              <p>Optional description or internal notes.</p>
+            </div>
+            <div class="form-grid product-form-grid">
+              <div class="form-group form-col-full">
+                <label class="form-label">Description</label>
+                <textarea class="form-textarea" name="description" rows="2" placeholder="Details..."></textarea>
+              </div>
+            </div>
+          </section>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="APP.closeModal('other-modal')">Cancel</button>
+      <button class="btn btn-secondary" id="other-prev-btn" style="display: none;" onclick="goToInventoryStep('other', 1)">Back</button>
+      <button class="btn btn-primary" id="other-next-btn" onclick="inventoryFormNextStep('other')">Next</button>
+      <button class="btn btn-primary" id="other-save-btn" style="display: none;" onclick="saveOtherItem()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Batch Details Modal -->
+<div class="modal-overlay" id="batch-modal">
+  <div class="modal modal-xl">
+    <div class="modal-header">
+      <span class="modal-title">Batch Wise Details</span>
+      <button class="modal-close" onclick="APP.closeModal('batch-modal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body" id="batch-content">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="APP.closeModal('batch-modal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="technical-unit-manager-modal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Manage Technical Units</span><button class="modal-close" onclick="APP.closeModal('technical-unit-manager-modal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <form id="technical-unit-manager-form" onsubmit="return false">
+        <input type="hidden" id="technical-unit-id">
+        <div class="form-grid">
+          <div class="form-group form-col-full"><label class="form-label">Technical Unit</label><input class="form-input" id="technical-unit-input" placeholder="e.g. 1 Kg or 1 Drum"></div>
+        </div>
+        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:16px">
+          <button class="btn btn-secondary" type="button" onclick="resetTechnicalUnitManagerForm()">Clear</button>
+          <button class="btn btn-primary" type="button" onclick="saveTechnicalUnit()">Save Unit</button>
+        </div>
+      </form>
+      <div id="technical-unit-groups" style="margin-top:18px;display:grid;gap:12px">
+        <div class="empty-state"><div class="spinner" style="margin:0 auto"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="bottle-manager-modal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Manage Bottles</span><button class="modal-close" onclick="APP.closeModal('bottle-manager-modal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <form id="bottle-manager-form" onsubmit="return false">
+        <input type="hidden" id="bottle-option-id">
+        <div class="form-grid">
+          <div class="form-group"><label class="form-label">Bottle Type</label><input class="form-input" id="bottle-type-input" placeholder="e.g. IBM"></div>
+          <div class="form-group"><label class="form-label">Bottle Size</label><input class="form-input" id="bottle-size-input" placeholder="e.g. 1 Ltr"></div>
+        </div>
+        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:16px">
+          <button class="btn btn-secondary" type="button" onclick="resetBottleManagerForm()">Clear</button>
+          <button class="btn btn-primary" type="button" onclick="saveBottleOption()">Save Bottle Option</button>
+        </div>
+      </form>
+      <div id="bottle-options-groups" style="margin-top:18px;display:grid;gap:16px">
+        <div class="empty-state"><div class="spinner" style="margin:0 auto"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="box-manager-modal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Manage Boxes</span><button class="modal-close" onclick="APP.closeModal('box-manager-modal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <form id="box-manager-form" onsubmit="return false">
+        <input type="hidden" id="box-option-id">
+        <div class="form-grid">
+          <div class="form-group"><label class="form-label">Box Type</label><input class="form-input" id="box-type-input" placeholder="e.g. Corrugated"></div>
+          <div class="form-group"><label class="form-label">Box Size</label><input class="form-input" id="box-size-input" placeholder="e.g. 10x10x10"></div>
+        </div>
+        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:16px">
+          <button class="btn btn-secondary" type="button" onclick="resetBoxManagerForm()">Clear</button>
+          <button class="btn btn-primary" type="button" onclick="saveBoxOption()">Save Box Option</button>
+        </div>
+      </form>
+      <div id="box-options-groups" style="margin-top:18px;display:grid;gap:16px">
+        <div class="empty-state"><div class="spinner" style="margin:0 auto"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<datalist id="catalog-products-list"></datalist>
+<script src="../assets/js/database.js?v=41"></script><script src="../assets/js/utils.js?v=41"></script><script src="../assets/js/components/search-select.js?v=41"></script><script src="../assets/js/app.js?v=41"></script><script src="../assets/js/inventory.js?v=41"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</body></html>

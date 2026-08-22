@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgroChem ERP — Profile</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css?v=41"><link rel="stylesheet" href="../assets/css/dashboard.css?v=41"><link rel="stylesheet" href="../assets/css/forms.css?v=41"><link rel="stylesheet" href="../assets/css/responsive.css?v=41">
+</head>
+<body>
+<div class="app-layout" id="app-layout">
+  <script src="../assets/js/shared-layout.js?v=41"></script>
+  <script>document.addEventListener('DOMContentLoaded',()=>LAYOUT.injectLayout('Profile','Account / Profile'))</script>
+
+  <main class="main-content" id="main-content">
+    <div class="page-body">
+      <div class="page-header">
+        <div class="page-header-left">
+          <h2>Profile</h2>
+          <p>Account details and workspace access</p>
+        </div>
+        <div class="page-header-right">
+          <button type="button" class="btn btn-secondary" onclick="window.location.href='dashboard.html'">Back to Dashboard</button>
+        </div>
+      </div>
+
+      <div class="grid grid-2" style="gap:20px; align-items:stretch;">
+        <div class="card" style="padding:24px;">
+          <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;flex-wrap:wrap;">
+            <div class="user-avatar" style="width:64px;height:64px;font-size:22px;">AP</div>
+            <div>
+              <div style="font-size:20px;font-weight:800;color:var(--text-primary);">Admin</div>
+              <div style="font-size:13px;color:var(--text-secondary);">System administrator</div>
+            </div>
+          </div>
+          <div style="display:grid;gap:12px;">
+            <div style="padding:14px 16px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);">
+              <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px;">Workspace</div>
+              <div style="font-size:14px;font-weight:600;color:var(--text-primary);">AgroChem ERP</div>
+            </div>
+            <div style="padding:14px 16px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);">
+              <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px;">Role</div>
+              <div style="font-size:14px;font-weight:600;color:var(--text-primary);">Full administrative access</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="padding:24px;">
+          <div class="card-header" style="padding:0 0 16px;">
+            <div>
+              <div class="card-title">Quick Info</div>
+              <div class="card-subtitle">Visible on mobile and laptop layouts</div>
+            </div>
+          </div>
+          <div style="display:grid;gap:12px;">
+            <div style="padding:14px 16px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);">
+              <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px;">Access</div>
+              <div style="font-size:14px;font-weight:600;color:var(--text-primary);">All business modules enabled</div>
+            </div>
+            <div style="padding:14px 16px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);">
+              <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px;">Entry Point</div>
+              <div style="font-size:14px;font-weight:600;color:var(--text-primary);">Opened from the user menu</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="../assets/js/database.js?v=41"></script><script src="../assets/js/utils.js?v=41"></script><script src="../assets/js/app.js?v=41"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</body></html>

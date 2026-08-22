@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgroChem ERP - Daily Stock Usage</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link class="cache-buster-css" rel="stylesheet" href="../assets/css/style.css?v=45"><link rel="stylesheet" href="../assets/css/tables.css?v=45"><link rel="stylesheet" href="../assets/css/forms.css?v=45"><link rel="stylesheet" href="../assets/css/responsive.css?v=45"><link rel="stylesheet" href="../assets/css/tabs.css?v=45">
+  <link rel="stylesheet" href="../assets/css/components/search-select.css?v=45">
+  <style>
+    .low-stock-alert { background: rgba(239, 68, 68, 0.1); border: 1px solid var(--danger); border-radius: var(--radius); padding: 12px; margin-bottom: 16px; font-size: 13px; color: var(--danger); display: flex; gap: 12px; align-items: start; }
+    .low-stock-alert svg { width: 18px; height: 18px; flex-shrink: 0; margin-top: 2px; }
+    .packaging-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 18px; }
+    .packaging-card { background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+    .packaging-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+    .packaging-card-title { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+    .packaging-card-subtitle { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+    .card-badge { display: inline-flex; align-items: center; justify-content: center; padding: 4px 10px; border-radius: 999px; background: rgba(147, 197, 253, 0.12); color: var(--text-secondary); font-size: 11px; font-weight: 700; }
+    .packaging-card .form-group { margin-bottom: 0; }
+    .packaging-card .form-label { margin-bottom: 8px; font-size: 12px; color: var(--text-secondary); }
+    .packaging-card button { margin-top: 6px; }
+    .material-list-shell { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--surface); }
+    .material-list-head, .material-row { display: grid; grid-template-columns: minmax(0, 2fr) 120px 140px 110px 52px; gap: 12px; align-items: center; }
+    .material-list-head { background: var(--bg); padding: 12px 16px; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-secondary); }
+    .material-row { padding: 14px 16px; border-top: 1px solid var(--border); }
+    .material-item-meta { min-width: 0; }
+    .material-item-name { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+    .material-item-sub { display: flex; gap: 8px; flex-wrap: wrap; font-size: 12px; color: var(--text-muted); }
+    .material-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 999px; background: rgba(137, 233, 0, 0.08); color: var(--text-secondary); font-size: 11px; font-weight: 600; white-space: nowrap; }
+    .material-empty { padding: 24px 18px; text-align: center; color: var(--text-muted); font-size: 13px; }
+    .notes-panel { border: 1px dashed var(--border); border-radius: 8px; padding: 14px; background: rgba(255,255,255,0.02); }
+    .line-items-table { width: 100%; border-collapse: collapse; }
+    .line-items-table th { background: var(--bg); padding: 12px; text-align: left; font-size: 12px; font-weight: 700; color: var(--text-secondary); border-bottom: 1px solid var(--border); }
+    .line-items-table td { padding: 12px; border-bottom: 1px solid var(--border); }
+    .line-items-table input, .line-items-table select { font-size: 12px; padding: 6px 8px; }
+    .data-table td:nth-child(4) { white-space: normal; word-break: break-word; min-width: 250px; }
+    .data-table td:nth-child(5) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px; }
+    @media (max-width: 900px) {
+      .material-toolbar { grid-template-columns: 1fr; }
+      .packaging-grid { grid-template-columns: 1fr; }
+      .material-list-head { display: none; }
+      .material-row { grid-template-columns: 1fr; }
+      .data-table td:nth-child(5) { max-width: 150px; }
+    }
+  </style>
+</head>
+<body>
+<div class="app-layout" id="app-layout">
+  <script src="../assets/js/shared-layout.js?v=41"></script>
+  <script>document.addEventListener('DOMContentLoaded',()=>LAYOUT.injectLayout('Daily Stock Usage','Daily Stock Usage'))</script>
+  <main class="main-content" id="main-content">
+    <div class="page-body">
+      <div class="page-header">
+        <div class="page-header-left">
+          <h2>Daily Stock Usage</h2>
+          <p>Track daily material usage with a cleaner, inventory-linked entry flow</p>
+        </div>
+        <div class="page-header-right">
+          <button class="btn btn-primary" onclick="openAdd()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>New Entry</button>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('all')">All Entries</button>
+        <button class="tab-btn" onclick="switchTab('today')">Today</button>
+        <button class="tab-btn" onclick="switchTab('week')">This Week</button>
+        <button class="tab-btn" onclick="switchTab('month')">This Month</button>
+      </div>
+
+      <div class="filter-group">
+        <div>
+          <label>Search:</label>
+          <input id="search-input" type="text" placeholder="Search by transaction no, material, or notes...">
+        </div>
+        <div>
+          <label>Date From:</label>
+          <input id="date-from-filter" type="date">
+        </div>
+        <div>
+          <label>Date To:</label>
+          <input id="date-to-filter" type="date">
+        </div>
+      </div>
+
+      <div class="table-wrap data-table-wrap-mobile">
+        <div class="table-toolbar">
+          <div class="table-toolbar-left">
+            <span class="text-sm text-muted" id="total-info">Loading...</span>
+            <span class="badge badge-purple" id="total-material-lines">0 materials</span>
+          </div>
+          <div class="table-toolbar-right">
+            <span class="text-sm text-muted" id="total-qty-used">Qty used: 0</span>
+          </div>
+        </div>
+        <table class="data-table" id="daily-transactions-table">
+          <thead>
+            <tr>
+              <th><input type="checkbox"></th>
+              <th>Transaction No</th>
+              <th>Date</th>
+              <th>Materials Used</th>
+              <th>Notes</th>
+              <th>Lines</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody><tr><td colspan="7"><div class="empty-state"><div class="spinner" style="margin:0 auto"></div></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="modal-overlay" id="daily-transaction-modal">
+  <div class="modal modal-xl">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">New Daily Entry</span>
+      <button class="modal-close" onclick="APP.closeModal('daily-transaction-modal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body" style="max-height: 78vh; overflow-y: auto;">
+      <div class="product-step-header">
+        <button class="product-step-pill active" id="txn-step-pill-1" onclick="goToTransactionStep(1)">Step 1 - Basic Info</button>
+        <button class="product-step-pill" id="txn-step-pill-2" onclick="goToTransactionStep(2)">Step 2 - Materials</button>
+      </div>
+
+      <form id="daily-transaction-form" onsubmit="return false">
+        <div class="product-step-panel active" data-step-panel="1">
+          <section class="product-form-card">
+            <div class="product-form-card-head">
+              <h4>Entry Details</h4>
+              <p>Capture the working date and any notes for this daily entry.</p>
+            </div>
+            <div class="form-grid product-form-grid">
+              <div class="form-group">
+                <label class="form-label">Transaction No <span class="required">*</span></label>
+                <input class="form-input" type="text" id="txn-no-field" placeholder="Auto-generated" readonly>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Date <span class="required">*</span></label>
+                <input class="form-input" type="date" id="txn-date-field">
+              </div>
+              <div class="form-group form-col-full">
+                <label class="form-label">Notes (if any)</label>
+                <div class="notes-panel">
+                  <textarea class="form-textarea" id="notes-field" rows="4" placeholder="Add remarks, production notes, shortages, or anything useful for the day..."></textarea>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="product-step-panel" data-step-panel="2">
+          <section class="product-form-card">
+            <div class="product-form-card-head">
+              <h4>Packaging and Additional Materials</h4>
+              <p>Choose the material category, select the variant used, and enter the quantity consumed for this daily stock usage.</p>
+            </div>
+            <div class="packaging-grid">
+              <div class="packaging-card">
+                <div class="packaging-card-header">
+                  <div>
+                    <div class="packaging-card-title">Technical</div>
+                    <div class="packaging-card-subtitle">Choose technical material type and quantity used.</div>
+                  </div>
+                  <span class="card-badge">Qty</span>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Technical Variant</label>
+                  <select class="form-select" id="material-select-technical" data-autocomplete>
+                    <option value="">Select...</option>
+                  </select>
+                  <div class="variant-stock" id="material-stock-technical">Available: —</div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Used Quantity</label>
+                  <input class="form-input" type="number" id="material-qty-technical" placeholder="0" min="0.01" step="0.01">
+                </div>
+                <button type="button" class="btn btn-primary" onclick="addCategorizedMaterial('Technical')">Add Technical</button>
+              </div>
+
+              <div class="packaging-card">
+                <div class="packaging-card-header">
+                  <div>
+                    <div class="packaging-card-title">Bottles</div>
+                    <div class="packaging-card-subtitle">Choose bottle variant and quantity used.</div>
+                  </div>
+                  <span class="card-badge">Nos</span>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Bottle Variant</label>
+                  <select class="form-select" id="material-select-bottles" data-autocomplete>
+                    <option value="">Select...</option>
+                  </select>
+                  <div class="variant-stock" id="material-stock-bottles">Available: —</div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Used Quantity</label>
+                  <input class="form-input" type="number" id="material-qty-bottles" placeholder="0" min="0" step="1">
+                </div>
+                <button type="button" class="btn btn-primary" onclick="addCategorizedMaterial('Bottles')">Add Bottle</button>
+              </div>
+
+              <div class="packaging-card">
+                <div class="packaging-card-header">
+                  <div>
+                    <div class="packaging-card-title">Boxes</div>
+                    <div class="packaging-card-subtitle">Choose box variant and quantity used.</div>
+                  </div>
+                  <span class="card-badge">Nos</span>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Box Variant</label>
+                  <select class="form-select" id="material-select-boxes" data-autocomplete>
+                    <option value="">Select...</option>
+                  </select>
+                  <div class="variant-stock" id="material-stock-boxes">Available: —</div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Used Quantity</label>
+                  <input class="form-input" type="number" id="material-qty-boxes" placeholder="0" min="0" step="1">
+                </div>
+                <button type="button" class="btn btn-primary" onclick="addCategorizedMaterial('Boxes')">Add Box</button>
+              </div>
+
+              <div class="packaging-card">
+                <div class="packaging-card-header">
+                  <div>
+                    <div class="packaging-card-title">Labels</div>
+                    <div class="packaging-card-subtitle">Choose label design/size and quantity used.</div>
+                  </div>
+                  <span class="card-badge">Nos</span>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Label Variant</label>
+                  <select class="form-select" id="material-select-labels" data-autocomplete>
+                    <option value="">Select...</option>
+                  </select>
+                  <div class="variant-stock" id="material-stock-labels">Available: —</div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Used Quantity</label>
+                  <input class="form-input" type="number" id="material-qty-labels" placeholder="0" min="0" step="1">
+                </div>
+                <button type="button" class="btn btn-primary" onclick="addCategorizedMaterial('Labels')">Add Label</button>
+              </div>
+
+              <div class="packaging-card">
+                <div class="packaging-card-header">
+                  <div>
+                    <div class="packaging-card-title">Other Materials</div>
+                    <div class="packaging-card-subtitle">Track additional packaging or support items used.</div>
+                  </div>
+                  <span class="card-badge">Qty</span>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Other Variant</label>
+                  <select class="form-select" id="material-select-others" data-autocomplete>
+                    <option value="">Select...</option>
+                  </select>
+                  <div class="variant-stock" id="material-stock-others">Available: —</div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Used Quantity</label>
+                  <input class="form-input" type="number" id="material-qty-others" placeholder="0" min="0.01" step="0.01">
+                </div>
+                <button type="button" class="btn btn-primary" onclick="addCategorizedMaterial('Others')">Add Material</button>
+              </div>
+            </div>
+
+            <div id="materials-list" class="material-list-shell">
+              <div class="material-empty">No materials added yet.</div>
+            </div>
+          </section>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="APP.closeModal('daily-transaction-modal')">Cancel</button>
+      <button class="btn btn-secondary" id="txn-prev-btn" style="display: none;" onclick="goToTransactionStep(transactionFormStep - 1)">Back</button>
+      <button class="btn btn-primary" id="txn-next-btn" onclick="transactionFormNextStep()">Next</button>
+      <button class="btn btn-primary" id="txn-save-btn" style="display: none;" onclick="saveTransaction()">Save Entry</button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/database.js?v=42"></script>
+<script src="../assets/js/utils.js?v=42"></script>
+<script src="../assets/js/components/search-select.js?v=42"></script>
+<script src="../assets/js/app.js?v=42"></script>
+<script src="../assets/js/daily-transactions.js?v=42"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</body>
+</html>

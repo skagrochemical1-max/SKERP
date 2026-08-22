@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Invoice History</title>
+
+    <meta name="description" content="Invoice History." />
+    <!-- Favicon & PWA setup (same as index.html) -->
+    <link rel="shortcut icon" href="public/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="16x16" href="public/favicon-16x16.jpg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="public/favicon-32x32.jpg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="public/icon-192.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Invoice" />
+    <link rel="manifest" href="public/manifest.json" />
+    <meta name="theme-color" content="#3f6b14" />
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=block" rel="stylesheet" />
+    
+    <!-- Reuse the same global styles -->
+    <link rel="stylesheet" href="css/main.css?v=1.0.2">
+    
+    <style>
+        body { 
+          background: var(--bg-main); 
+          color: var(--text-main);
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+          -webkit-font-smoothing: antialiased;
+          transition: background 0.3s;
+        }
+
+        /* ── Toolbar (matches ERP topbar) ── */
+        #toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            height: 64px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 200;
+            box-shadow: 0 1px 8px rgba(38, 61, 25, 0.07);
+        }
+
+        /* ── Container & Header ── */
+        .history-container {
+            max-width: 1200px;
+            margin: 36px auto;
+            padding: 0 28px;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 28px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .history-title {
+            font-size: 26px;
+            font-weight: 800;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            letter-spacing: -0.02em;
+        }
+
+        /* ── Search box ── */
+        .search-box {
+            display: flex;
+            align-items: center;
+            background: var(--bg-card);
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            padding: 10px 16px;
+            width: 300px;
+            max-width: 100%;
+            transition: all 0.2s;
+            box-shadow: var(--shadow-sm);
+        }
+        .search-box:focus-within {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--accent-light);
+        }
+        .search-box input {
+            background: transparent !important;
+            border: none;
+            outline: none;
+            width: 100%;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            margin-left: 8px;
+            color: var(--text-main);
+        }
+        .search-box input::placeholder { color: var(--text-muted); }
+
+        /* ── Table Card ── */
+        .history-card {
+            background: var(--bg-card);
+            border-radius: 18px;
+            box-shadow: 0 8px 28px rgba(38, 61, 25, 0.09);
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            table-layout: fixed;
+            font-size: 13.5px;
+        }
+
+        /* ERP-style table header: subtle accent tint */
+        .history-table thead {
+            background: rgba(63, 107, 20, 0.05);
+        }
+        [data-theme="dark"] .history-table thead {
+            background: rgba(143, 220, 76, 0.06);
+        }
+
+        .history-table th {
+            padding: 13px 18px;
+            font-size: 10.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        .history-table td {
+            padding: 16px 18px;
+            font-size: 13.5px;
+            vertical-align: middle;
+            color: var(--text-sub);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .history-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .history-table tbody tr {
+            background: transparent;
+            transition: background 0.15s ease;
+        }
+
+        .history-table tbody tr:hover td {
+            background: var(--bg-banner-hover);
+        }
+
+        /* ── Badges ── */
+        .status-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .badge-saved { background: var(--accent-light); color: var(--accent); }
+        .badge-draft { background: rgba(202, 138, 4, 0.12); color: #a16207; }
+        [data-theme="dark"] .badge-draft { color: #fbbf24; }
+
+        /* ── Buttons ── */
+        .btn-sm { padding: 7px 15px; font-size: 12.5px; font-weight: 600; border-radius: 8px; }
+        
+        .action-cell {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        /* ── Empty state ── */
+        .empty-state {
+            padding: 80px 20px;
+            text-align: center;
+            color: var(--text-muted);
+        }
+
+        /* ── Loading spinner ── */
+        .spinner-icon {
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        .loading-row-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+
+        /* ── Mobile Card Layout ── */
+        @media (max-width: 768px) {
+            body { font-size: 14px; }
+
+            /* Toolbar responsive */
+            #toolbar {
+                padding: 0 14px;
+                height: 56px;
+            }
+            #toolbar .toolbar-brand {
+                gap: 8px;
+            }
+            #toolbar .nav-logo {
+                height: 34px;
+                width: 34px;
+            }
+            #toolbar .brand-name {
+                font-size: 14px;
+            }
+            /* Make ERP Dashboard link icon-only on mobile */
+            #toolbar-right > a.btn {
+                padding: 6px 10px;
+                font-size: 12px;
+                gap: 4px;
+            }
+            #toolbar-right > a.btn .erp-label {
+                display: none;
+            }
+
+            /* Container + Header */
+            .history-container {
+                padding: 0 12px;
+                margin: 16px auto;
+            }
+
+            .history-header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+                margin-bottom: 16px;
+            }
+
+            .history-title {
+                font-size: 22px;
+                gap: 8px;
+            }
+            .history-title .material-symbols-outlined {
+                font-size: 22px !important;
+            }
+
+            /* Search box full width */
+            .search-box {
+                width: 100%;
+                border-radius: 12px;
+                padding: 10px 14px;
+            }
+
+            /* Remove card wrapper on mobile */
+            .history-card {
+                background: transparent;
+                border: none;
+                box-shadow: none;
+                border-radius: 0;
+            }
+            .table-responsive {
+                overflow: visible;
+            }
+
+            /* Convert table to cards */
+            .history-table {
+                display: block;
+                table-layout: auto;
+            }
+            .history-table thead {
+                display: none;
+            }
+            .history-table tbody {
+                display: flex;
+                flex-direction: column;
+                gap: 14px;
+            }
+            .history-table tbody tr {
+                display: block;
+                background: var(--bg-card);
+                border: 1.5px solid var(--border);
+                border-radius: 16px;
+                overflow: hidden;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+                padding: 0;
+            }
+
+            /* All cells become block rows */
+            .history-table tbody tr td {
+                display: flex;
+                flex-direction: column;
+                padding: 10px 16px;
+                border: none;
+                border-bottom: 1px solid var(--border-light);
+                gap: 2px;
+                width: 100%;
+                box-sizing: border-box;
+            }
+
+            .history-table tbody tr td:last-child {
+                border-bottom: none;
+            }
+
+            /* Data label above each value */
+            .history-table tbody tr td::before {
+                content: attr(data-label);
+                font-size: 9px;
+                font-weight: 800;
+                text-transform: uppercase;
+                letter-spacing: 0.08em;
+                color: var(--text-muted);
+                line-height: 1;
+                display: block;
+                margin-bottom: 2px;
+            }
+
+            /* INV # — accent styled, bigger */
+            .history-table tbody tr td:nth-child(1) {
+                background: rgba(0,0,0,0.04);
+                border-bottom: 2px solid var(--border);
+            }
+            .history-table tbody tr td:nth-child(1) strong {
+                font-size: 16px;
+                font-weight: 800;
+                color: var(--primary);
+            }
+
+            /* TOTAL AMOUNT — green highlight */
+            .history-table tbody tr td:nth-child(5) {
+                font-size: 15px;
+                font-weight: 700;
+                color: var(--primary) !important;
+            }
+
+            /* ACTION CELL — becomes a button bar at bottom */
+            .history-table tbody tr td:last-child {
+                background: var(--bg-banner);
+                border-top: 1.5px solid var(--border);
+            }
+            .history-table tbody tr td:last-child::before {
+                display: none;
+            }
+            .action-cell {
+                flex-direction: row !important;
+                justify-content: flex-end;
+                gap: 10px;
+            }
+
+            /* Buttons in action cell */
+            .action-cell .btn-sm {
+                display: flex;
+                align-items: center;
+                gap: 5px;
+                padding: 8px 16px;
+                font-size: 13px;
+                border-radius: 10px;
+            }
+
+            /* Fix empty / error states */
+            .empty-state {
+                padding: 50px 20px;
+            }
+        }
+    </style>
+
+
+</head>
+
+<body>
+
+    <div id="toolbar">
+        <div class="toolbar-brand">
+            <a class="back-arrow-tool" href="index.html" title="Back to Builder">
+                <span class="material-symbols-outlined">arrow_back</span>
+            </a>
+            <img src="public/logo.jpg" alt="Logo" class="nav-logo" id="navbar-logo" onerror="this.style.display='none'" />
+            <div class="brand-text">
+                <span class="brand-name">AgroChem</span>
+            </div>
+        </div>
+        <div style="flex-grow:1;"></div>
+        <div id="toolbar-right" style="display:flex;align-items:center;gap:10px;">
+            <a class="btn btn-ghost erp-dash-btn" href="../pages/dashboard.html" style="font-size: 14px; padding: 6px 12px; display: flex; align-items: center; gap: 6px; text-decoration: none; color: inherit;">
+                <span class="material-symbols-outlined">dashboard</span><span class="erp-label"> ERP Dashboard</span>
+            </a>
+            <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">
+                <span id="theme-icon" class="material-symbols-outlined">dark_mode</span>
+            </button>
+        </div>
+    </div>
+
+
+    <div class="history-container">
+        <div class="history-header">
+            <div class="history-title">
+                <span class="material-symbols-outlined" style="color:var(--primary);font-size:28px">history</span>
+                Invoice History
+            </div>
+            <div class="search-box">
+                <span class="material-symbols-outlined" style="color:var(--text-muted);font-size:20px">search</span>
+                <input type="text" id="history-search" placeholder="Search customer, inv #..." autocomplete="off" />
+            </div>
+        </div>
+
+        <div class="history-card">
+            <div class="table-responsive">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 100px;">Inv #</th>
+                            <th style="width: 140px;">Date</th>
+                            <th>Customer Name</th>
+                            <th style="width: 150px;">Mobile</th>
+                            <th style="width: 150px; text-align:right">Total Amount</th>
+                            <th style="width: 180px; text-align:right">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-tbody">
+                        <tr id="loading-row">
+                            <td colspan="7">
+                                <div class="loading-row-content">
+                                    <span class="material-symbols-outlined spinner-icon">autorenew</span>
+                                    Loading invoices...
+                                </div>
+                            </td>
+                        </tr>
+                        <tr id="error-row" style="display:none">
+                            <td colspan="7" style="text-align:center; padding: 40px; color:var(--danger-text);">
+                                Failed to load history. Please check your backend connection.
+                            </td>
+                        </tr>
+                        <tr id="empty-row" style="display:none">
+                            <td colspan="7">
+                                <div class="empty-state">
+                                    <span class="material-symbols-outlined" style="font-size:48px;color:var(--text-faint);margin-bottom:12px;">receipt_long</span>
+                                    <div style="font-size:16px;font-weight:600;color:var(--text-main);margin-bottom:4px;">No Invoices Found</div>
+                                    <div style="font-size:13px;color:var(--text-muted);">Save an invoice in the builder to see it here.</div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Scripts -->
+    <script>
+      // Load current theme safely
+      try {
+        document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark');
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    </script>
+    <script src="js/api.js?v=1.0.2"></script>
+    <script src="js/history.js?v=1.0.2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</body>
+</html>

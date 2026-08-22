@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgroChem ERP — Products</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+      <link rel="stylesheet" href="../assets/css/style.css?v=41"><link rel="stylesheet" href="../assets/css/tables.css?v=41"><link rel="stylesheet" href="../assets/css/forms.css?v=41"><link rel="stylesheet" href="../assets/css/responsive.css?v=41">
+  <link rel="stylesheet" href="../assets/css/components/search-select.css?v=41">
+</head>
+<body>
+<div class="app-layout" id="app-layout">
+  <script src="../assets/js/shared-layout.js?v=41"></script>
+  <script>document.addEventListener('DOMContentLoaded',()=>LAYOUT.injectLayout('Products Catalog','Products Catalog'))</script>
+
+  <main class="main-content" id="main-content">
+    <div class="page-body">
+      <div class="page-header">
+        <div class="page-header-left"><h2>Products Catalog</h2><p>Manage product catalog and pricing</p></div>
+        <div class="page-header-right">
+          <button type="button" class="btn btn-primary" onclick="openAdd()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add Product</button>
+        </div>
+      </div>
+
+      <div class="table-tabs">
+        <button class="tab-btn active" data-tab="Products">Products</button>
+        <button class="tab-btn" data-tab="Packaging">Packaging</button>
+      </div>
+
+      <div class="table-wrap data-table-wrap-mobile" id="products-table-wrap">
+        <div class="table-toolbar">
+          <div class="table-toolbar-left">
+            <div class="table-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input id="search-input" type="search" placeholder="Search products, batch, brand, category…"></div>
+            <div class="table-filters cat-pill-filters" id="cat-pill-filters">
+              <button type="button" class="cat-pill active" data-cat="">All</button>
+              <button type="button" class="cat-pill" data-cat="Insecticides">Insecticides</button>
+              <button type="button" class="cat-pill" data-cat="Fungicides">Fungicides</button>
+              <button type="button" class="cat-pill" data-cat="Herbicides">Herbicides</button>
+              <button type="button" class="cat-pill" data-cat="PGR">PGR</button>
+            </div>
+          </div>
+          <div class="table-toolbar-right"><span class="text-sm text-muted" id="total-info">Loading…</span></div>
+        </div>
+        <table class="data-table" id="products-table">
+          <thead><tr>
+            <th><input type="checkbox"></th>
+            <th style="width: 18%;">Product Name</th><th>Batch No</th><th>Brand</th><th>Category</th><th>Toxicity</th><th>Purchase Price (₹)</th><th>Selling Price (₹)</th><th>Actions</th>
+          </tr></thead>
+          <tbody><tr><td colspan="9"><div class="empty-state"><div class="spinner" style="margin:0 auto"></div></div></td></tr></tbody>
+        </table>
+        <div class="pagination"></div>
+      </div>
+
+      <div class="table-wrap data-table-wrap-mobile" id="packaging-table-wrap" style="display:none">
+        <div class="table-toolbar">
+          <div class="table-toolbar-left">
+            <div class="table-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input id="packaging-search-input" placeholder="Search by product…"></div>
+          </div>
+          <div class="table-toolbar-right"><span class="text-sm text-muted" id="packaging-total-info">Loading…</span></div>
+        </div>
+        <table class="data-table" id="packaging-table">
+          <thead><tr>
+            <th style="width: 28%;">Product Name</th>
+            <th>Variant Size</th>
+            <th>Variant Price (₹)</th>
+            <th>Base Purchase Price (₹)</th>
+            <th>Base Selling Price (₹)</th>
+            <th>Actions</th>
+          </tr></thead>
+          <tbody><tr><td colspan="6"><div class="empty-state"><div class="spinner" style="margin:0 auto"></div></div></td></tr></tbody>
+        </table>
+        <div class="pagination"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Product Modal -->
+<div class="modal-overlay" id="product-modal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title" id="modal-title">Add Product</span><button class="modal-close" onclick="APP.closeModal('product-modal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <form id="product-form" onsubmit="return false">
+        <div class="product-stepper" role="tablist" aria-label="Product form steps">
+          <button type="button" class="product-step-pill active" id="product-step-pill-1" onclick="goToProductStep(1)">Step 1 - Basic Info</button>
+          <button type="button" class="product-step-pill" id="product-step-pill-2" onclick="goToProductStep(2)">Step 2 - Packaging & Pricing</button>
+        </div>
+
+        <div class="product-step-panel active" data-step-panel="1">
+          <section class="product-form-card">
+            <div class="product-form-card-head">
+              <h4>Product Information</h4>
+              <p>Core details to identify the product quickly.</p>
+            </div>
+            <div class="form-grid product-form-grid">
+              <div class="form-group form-col-full" style="position:relative"><label class="form-label">Product Name <span class="required">*</span></label>
+                <input class="form-input" name="name" id="product-name-input" placeholder="Search technical stock or type a custom name" autocomplete="off">
+                <div id="product-name-suggestions" class="search-suggestions" role="listbox" aria-label="Technical inventory suggestions"></div>
+              </div>
+              <div class="form-group"><label class="form-label">Category</label>
+                <select class="form-select" name="category"><option>Insecticides</option><option>Fungicides</option><option>Herbicides</option><option>PGR</option></select>
+              </div>
+              <div class="form-group"><label class="form-label">Brand</label><input class="form-input" name="brand" placeholder="e.g. AgroGuard"></div>
+            </div>
+          </section>
+
+          <section class="product-form-card">
+            <div class="product-form-card-head">
+              <h4>Technical Information</h4>
+              <p>Optional technical and descriptive details.</p>
+            </div>
+            <div class="form-grid product-form-grid">
+              <div class="form-group"><label class="form-label">Batch No</label><input class="form-input" name="batch_no" placeholder="e.g. B2026-001"></div>
+              <div class="form-group form-col-full"><label class="form-label">Technical Composition</label><input class="form-input" name="composition" placeholder="e.g. Chlorpyrifos 20%"></div>
+              <div class="form-group form-col-full"><label class="form-label">Description</label><textarea class="form-textarea" name="description" rows="2" placeholder="Product description..."></textarea></div>
+            </div>
+          </section>
+
+          <section class="product-form-card">
+            <div class="product-form-card-head">
+              <h4>Regulatory & Hazard Compliance</h4>
+              <p>Government registration details and toxicity classification.</p>
+            </div>
+            <div class="form-grid product-form-grid">
+              <div class="form-group"><label class="form-label">CIB&RC Reg No</label><input class="form-input" name="cibrc_reg_no" placeholder="e.g. CIR-12345/2026"></div>
+              <div class="form-group">
+                <label class="form-label">Toxicity Triangle</label>
+                <select class="form-select" name="toxicity_triangle">
+                  <option value="">None / Select</option>
+                  <option value="Green">Green (Slightly Toxic)</option>
+                  <option value="Blue">Blue (Moderately Toxic)</option>
+                  <option value="Yellow">Yellow (Highly Toxic)</option>
+                  <option value="Red">Red (Extremely Toxic)</option>
+                </select>
+              </div>
+              <div class="form-group form-col-full"><label class="form-label">Antidote Statement</label><textarea class="form-textarea" name="antidote_statement" rows="2" placeholder="Emergency medical antidote instruction statement..."></textarea></div>
+            </div>
+          </section>
+        </div>
+
+        <div class="product-step-panel" data-step-panel="2">
+          <section class="product-form-card">
+            <div class="product-form-card-head">
+              <h4>Unit & GST</h4>
+              <p>Select the measurement unit and applicable GST rate for this product.</p>
+            </div>
+            <div class="form-grid product-form-grid">
+              <div class="form-group">
+                <label class="form-label">Unit <span class="required">*</span></label>
+                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                  <select class="form-select" name="unit" id="product-unit-select" onchange="onUnitChange()"></select>
+                  <button type="button" class="btn btn-sm btn-secondary" onclick="toggleUnitManager()" id="unit-manager-toggle">Manage units</button>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">GST Rate</label>
+                <select class="form-select" id="default-gst" name="gst">
+                  <option value="">None (0%)</option>
+                  <option value="GST5">GST 5%</option>
+                  <option value="GST12">GST 12%</option>
+                  <option value="GST18">GST 18%</option>
+                  <option value="IGST5">IGST 5%</option>
+                  <option value="IGST12">IGST 12%</option>
+                  <option value="IGST18">IGST 18%</option>
+                </select>
+              </div>
+              <div class="form-group form-col-full" style="margin-top: 10px; display:none;" id="product-unit-manager">
+                <label class="form-label">Manage Units</label>
+                <div id="product-unit-panel" style="display: grid; gap: 10px;">
+                  <div id="product-unit-pill-list" style="display:flex; flex-wrap:wrap; gap:8px; padding:6px 0;"></div>
+                  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <input class="form-input" id="new-unit-name" placeholder="New unit name e.g. Gram" style="flex:1; min-width:160px;">
+                    <input class="form-input" id="new-unit-sizes" placeholder="Default sizes, comma-separated" style="flex:2; min-width:200px;">
+                    <button type="button" class="btn btn-secondary" onclick="addNewUnitFromInput()">Add unit</button>
+                  </div>
+                  <div class="text-sm text-muted">Units are managed separately. Use this panel only when you want to add or remove a unit.</div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="product-form-card">
+            <div class="product-form-card-head">
+              <h4>Packaging Details</h4>
+              <p>Add packaging sizes for this product. Select one base variant that carries the purchase cost; other sizes only need selling price.</p>
+            </div>
+            <div id="packaging-options-container"></div>
+            <button type="button" class="btn btn-secondary" style="width:100%;margin-top:12px" onclick="addPackagingOption()">+ Add Packaging Option</button>
+          </section>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="APP.closeModal('product-modal')">Cancel</button>
+      <button class="btn btn-secondary" id="product-prev-btn" style="display:none" onclick="productFormPrevStep()">Back</button>
+      <button class="btn btn-primary" id="product-next-btn" onclick="productFormNextStep()">Next</button>
+      <button class="btn btn-primary" id="product-save-btn" style="display:none" onclick="saveProduct()">Save Product</button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/database.js?v=41"></script>
+<script src="../assets/js/utils.js?v=41"></script>
+<script src="../assets/js/components/search-select.js?v=41"></script>
+<script src="../assets/js/app.js?v=41"></script><script src="../assets/js/products.js?v=41"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</body></html>

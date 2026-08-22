@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cyber-Agri Formulation System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+    <script type="module" crossorigin src="/assets/formulations-BjLJkLt3.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/formulations-C2kyJcsu.css">
+    <link rel="stylesheet" crossorigin href="/assets/style-BQLRryxR.css">
+    <link rel="stylesheet" crossorigin href="/assets/dashboard-C4Qf09Be.css">
+    <link rel="stylesheet" crossorigin href="/assets/tables-BwTHrusJ.css">
+    <link rel="stylesheet" crossorigin href="/assets/responsive-C44n9ewS.css">
+  </head>
+  <body>
+  <div class="app-layout" id="app-layout">
+    <script src="../assets/js/shared-layout.js?v=41"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        LAYOUT.injectLayout('Production / Batch', 'Production / Batch');
+        
+        // Highlight active navigation menu item
+        const path = window.location.pathname.split('/').pop() || 'dashboard.html';
+        document.querySelectorAll('.nav-item').forEach(item => {
+          const href = item.getAttribute('href') || '';
+          item.classList.toggle('active', href === path);
+        });
+      });
+    </script>
+    <main class="main-content" id="main-content">
+      <div class="page-body">
+  
+    <div id="root"></div>
+  
+      </div>
+    </main>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</body>
+</html>
