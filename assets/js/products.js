@@ -750,8 +750,8 @@ async function saveProduct() {
       product_id: savedProductId,
       packaging_size: opt.packaging_size,
       purchase_price: opt.is_base ? (parseFloat(opt.purchase_price) || 0) : 0,
-      sell_price: parseFloat(opt.sell_price) || 0,
-      is_base: opt.is_base
+      sell_price: parseFloat(opt.sell_price) || 0
+      // is_base is not in the database schema; it is inferred based on purchase_price > 0
     }));
 
     if (pkgPayload.length > 0) {
