@@ -336,7 +336,7 @@ async function handleLogin(e) {
       btn.disabled = false;
       btnText.textContent = 'Login to ERP';
     } else {
-      window.location.href = '/pages/dashboard.html';
+      window.location.href = 'pages/dashboard.html';
     }
   } catch (err) {
     console.error('Login error:', err);
@@ -350,7 +350,7 @@ async function handleLogin(e) {
 // Check if already logged in
 window.dbClient.auth.getSession().then(({ data: { session } }) => {
   if (session) {
-    window.location.href = '/pages/dashboard.html';
+    window.location.href = 'pages/dashboard.html';
   }
 });
 </script>
