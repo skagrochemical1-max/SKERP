@@ -149,8 +149,17 @@ function getFormData(formId) {
   if (!form) return {};
   const data = {};
   new FormData(form).forEach((val, key) => {
-    const field = form.elements[key];
-    data[key] = shouldNormalizeFormField(field) ? normalizeTextValue(val, key) : val;
+    let field = form.elements[key];
+    if (field && field.length && !field.type) field = field[0];
+    let finalVal = shouldNormalizeFormField(field) ? normalizeTextValue(val, key) : val;
+    
+    if (finalVal === '') {
+      finalVal = null; // Convert empty strings to null to satisfy Postgres strict types
+    } else if (field && field.type === 'number') {
+      finalVal = parseFloat(finalVal);
+    }
+    
+    data[key] = finalVal;
   });
   return data;
 }
