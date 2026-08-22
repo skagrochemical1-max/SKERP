@@ -178,20 +178,45 @@ async function saveProduction() {
       const { data, error } = await window.dbClient.from('production_batches').insert([payload]).select();
       if (error) throw error;
       
-      // Add finished good to stock_batches to INCREASE inventory
-      const stockBatchPayload = {
-        item_id: prodObj.id,
-        item_name: prodObj.name,
-        item_type: 'Catalog',
-        batch_no: batchNo,
-        purchase_price: price,
-        initial_qty: qty,
-        current_qty: qty,
-        unit: prodObj.unit || 'Kg',
-        created_at: new Date(d.date || new Date()).toISOString()
-      };
+      // Sync logic: Check if this product exists in inventory_items by name
+      const { data: matchingInv } = await window.dbClient.from('inventory_items').select('*').ilike('name', prodObj.name);
       
-      await window.dbClient.from('stock_batches').insert([stockBatchPayload]);
+      if (matchingInv && matchingInv.length > 0) {
+        const invItem = matchingInv[0];
+        const newStock = (parseFloat(invItem.stock) || 0) + qty;
+        
+        // Update inventory_items stock
+        await window.dbClient.from('inventory_items').update({ stock: newStock }).eq('id', invItem.id);
+        
+        // Add to stock_batches as Inventory so it appears in the dashboard properly
+        const stockBatchPayload = {
+          item_id: invItem.id,
+          item_name: invItem.name,
+          item_type: 'Inventory',
+          batch_no: batchNo,
+          purchase_price: price,
+          initial_qty: qty,
+          current_qty: qty,
+          unit: invItem.unit || 'Kg',
+          created_at: new Date(d.date || new Date()).toISOString()
+        };
+        await window.dbClient.from('stock_batches').insert([stockBatchPayload]);
+        
+      } else {
+        // Add finished good to stock_batches as Catalog
+        const stockBatchPayload = {
+          item_id: prodObj.id,
+          item_name: prodObj.name,
+          item_type: 'Catalog',
+          batch_no: batchNo,
+          purchase_price: price,
+          initial_qty: qty,
+          current_qty: qty,
+          unit: prodObj.unit || 'Kg',
+          created_at: new Date(d.date || new Date()).toISOString()
+        };
+        await window.dbClient.from('stock_batches').insert([stockBatchPayload]);
+      }
     }
     
     APP.showToast('Production recorded successfully!', 'success');
@@ -209,10 +234,19 @@ async function deleteProduction(id) {
   APP.showConfirm('Delete this production batch and remove it from inventory?', async () => {
     try {
       if (b && b.batch_no) {
-        await window.dbClient.from('stock_batches').delete()
-          .eq('item_id', b.product_id)
-          .eq('item_type', 'Catalog')
-          .eq('batch_no', b.batch_no);
+        const { data: batches } = await window.dbClient.from('stock_batches').select('*').eq('batch_no', b.batch_no);
+        if (batches && batches.length > 0) {
+          for (const batch of batches) {
+            if (batch.item_type === 'Inventory') {
+              const { data: invItem } = await window.dbClient.from('inventory_items').select('stock').eq('id', batch.item_id).single();
+              if (invItem) {
+                const newStock = (parseFloat(invItem.stock) || 0) - batch.initial_qty;
+                await window.dbClient.from('inventory_items').update({ stock: newStock }).eq('id', batch.item_id);
+              }
+            }
+            await window.dbClient.from('stock_batches').delete().eq('id', batch.id);
+          }
+        }
       }
       
       const { error } = await window.dbClient.from('production_batches').delete().eq('id', id);

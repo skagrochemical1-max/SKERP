@@ -30,20 +30,23 @@
           const result = (forms || []).map(f => {
             const fIngs = (ings || []).filter(i => i.formulation_id === f.id).map(i => ({
               id: i.id,
-              name: i.ingredient_name,
+              product_name: i.ingredient_name,
+              product_id: '',
               percentage: i.percentage,
               quantity: i.quantity,
               unit: i.unit,
-              costPerUnit: i.cost_per_unit,
-              entryMode: i.percentage > 0 ? 'percentage' : 'quantity'
+              cost_per_unit: i.cost_per_unit,
+              entry_mode: i.percentage > 0 ? 'percentage' : 'quantity'
             }));
             return {
               id: f.id,
-              name: f.product_name || `Formulation ${f.id}`,
-              productId: f.product_id,
-              description: f.notes || '',
-              baseVolume: f.batch_size || 1000,
-              baseUnit: f.batch_unit || 'L',
+              product_name: f.product_name || `Formulation ${f.id}`,
+              product_id: f.product_id,
+              notes: f.notes || '',
+              batch_size: f.batch_size || 1000,
+              batch_unit: f.batch_unit || 'L',
+              status: f.status || 'Draft',
+              batch_no: f.batch_no || '',
               ingredients: fIngs
             };
           });
