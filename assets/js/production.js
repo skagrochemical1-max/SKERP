@@ -10,15 +10,13 @@ async function loadData() {
   try {
     updatePageDebug('Loading...', '#10B981');
     
-    // Fetch Products (Finished Goods)
-    const { data: prodData } = await window.dbClient.from('products').select('id, name');
+    const { data: prodData } = await window.dbClient.from('products').select('*');
     cachedProducts = prodData || [];
     
-    // Fetch Inventory (Raw Materials)
-    const { data: invData } = await window.dbClient.from('inventory_items').select('id, name, unit');
+    // Fetch Inventory (Raw Materials) to get cost
+    const { data: invData } = await window.dbClient.from('inventory_items').select('*');
     cachedInventory = invData || [];
     
-    // Fetch Production Batches
     const { data: prodBatches, error } = await window.dbClient.from('production_batches')
       .select('*, production_ingredients(*)')
       .order('date', { ascending: false });
@@ -44,8 +42,13 @@ function updatePageDebug(text, color) {
 function populateProductSelect() {
   const select = document.getElementById('product-select');
   if (!select) return;
+  
+  if (select._ussInstance) select._ussInstance.destroy();
+  
   select.innerHTML = '<option value="">Select Product</option>' + 
     cachedProducts.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+    
+  if (window.UniversalSearchSelect) new UniversalSearchSelect(select);
 }
 
 function renderTable(data) {
@@ -82,6 +85,12 @@ function openProductionModal() {
   document.getElementById('modal-title').textContent = 'New Production Batch';
   document.getElementById('production-form').reset();
   document.querySelector('[name="date"]').value = UTILS.todayStr();
+  
+  const select = document.getElementById('product-select');
+  if (select._ussInstance) select._ussInstance.destroy();
+  select.value = "";
+  if (window.UniversalSearchSelect) new UniversalSearchSelect(select);
+  
   currentIngredients = [];
   renderIngredientsTable();
   APP.openModal('production-modal');
@@ -95,10 +104,15 @@ async function editProduction(id) {
   document.getElementById('modal-title').textContent = 'Edit Production Batch';
   UTILS.populateForm('production-form', b);
   
+  const select = document.getElementById('product-select');
+  if (select._ussInstance) select._ussInstance.destroy();
+  if (window.UniversalSearchSelect) new UniversalSearchSelect(select);
+  
   currentIngredients = (b.production_ingredients || []).map(ing => ({
     id: ing.id,
     inventory_id: ing.inventory_id,
-    quantity_used: ing.quantity_used
+    quantity_used: ing.quantity_used,
+    unit_price: ing.unit_price || 0 // if it exists
   }));
   
   renderIngredientsTable();
@@ -106,7 +120,7 @@ async function editProduction(id) {
 }
 
 function addIngredientRow() {
-  currentIngredients.push({ id: 'new-' + Date.now(), inventory_id: '', quantity_used: 0 });
+  currentIngredients.push({ id: 'new-' + Date.now(), inventory_id: '', quantity_used: 0, unit_price: 0 });
   renderIngredientsTable();
 }
 
@@ -116,7 +130,16 @@ function removeIngredientRow(idx) {
 }
 
 function updateIngredient(idx, field, value) {
-  currentIngredients[idx][field] = value;
+  if (field === 'inventory_id') {
+    const inv = cachedInventory.find(i => i.id == value);
+    currentIngredients[idx].inventory_id = value;
+    // auto populate price based on inventory opening cost or reorder level etc if needed
+    // Assuming inventory doesn't store direct price, we just leave it 0 or let user enter
+    // Wait, stock_batches has price, but we don't have it loaded. We just leave it for user to enter or 0.
+  } else {
+    currentIngredients[idx][field] = value;
+  }
+  renderIngredientsTable();
 }
 
 function renderIngredientsTable() {
@@ -124,46 +147,79 @@ function renderIngredientsTable() {
   if (!tbody) return;
   
   if (currentIngredients.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:15px; color:var(--text-muted); font-size:13px;">No raw materials added yet.</td></tr>';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="5" style="text-align:center; padding:15px; color:var(--text-muted); font-size:13px;">No raw materials added yet.</td></tr>';
     return;
   }
   
   const options = '<option value="">Select Raw Material</option>' + cachedInventory.map(i => `<option value="${i.id}">${i.name} (${i.unit || 'unit'})</option>`).join('');
   
+  let totalCost = 0;
+  
   tbody.innerHTML = currentIngredients.map((ing, idx) => {
+    const qty = parseFloat(ing.quantity_used) || 0;
+    const price = parseFloat(ing.unit_price) || 0;
+    const lineTotal = qty * price;
+    totalCost += lineTotal;
+    
     return `<tr>
       <td>
-        <select class="form-input" style="padding: 6px;" onchange="updateIngredient(${idx}, 'inventory_id', this.value)">
+        <select class="form-input uss-ingredient-select" style="padding: 6px;" onchange="updateIngredient(${idx}, 'inventory_id', this.value)">
           ${options.replace(`value="${ing.inventory_id}"`, `value="${ing.inventory_id}" selected`)}
         </select>
       </td>
       <td>
-        <input type="number" class="form-input" style="padding: 6px;" min="0.01" step="0.01" value="${ing.quantity_used || ''}" onchange="updateIngredient(${idx}, 'quantity_used', this.value)">
+        <input type="number" class="form-input" style="padding: 6px;" min="0" step="0.01" value="${ing.quantity_used || ''}" onchange="updateIngredient(${idx}, 'quantity_used', this.value)">
+      </td>
+      <td>
+        <input type="number" class="form-input" style="padding: 6px;" min="0" step="0.01" value="${ing.unit_price || ''}" onchange="updateIngredient(${idx}, 'unit_price', this.value)">
+      </td>
+      <td style="font-family: monospace; text-align: right; font-weight: bold;">
+        ₹${lineTotal.toFixed(2)}
       </td>
       <td>
         <button type="button" class="btn btn-sm" style="background:var(--danger); color:white; padding: 4px 8px;" onclick="removeIngredientRow(${idx})">X</button>
       </td>
     </tr>`;
   }).join('');
+  
+  tbody.innerHTML += `<tr>
+    <td colspan="3" style="text-align: right; font-weight: bold; padding: 10px;">Total Raw Material Cost:</td>
+    <td style="font-family: monospace; text-align: right; font-weight: bold; font-size: 16px; padding: 10px; color: var(--success);">₹${totalCost.toFixed(2)}</td>
+    <td></td>
+  </tr>`;
+  
+  // Re-init search selects
+  setTimeout(() => {
+    document.querySelectorAll('.uss-ingredient-select').forEach(sel => {
+       if (sel._ussInstance) sel._ussInstance.destroy();
+       if (window.UniversalSearchSelect) new UniversalSearchSelect(sel);
+    });
+  }, 10);
 }
 
 async function saveProduction() {
   const d = UTILS.getFormData('production-form');
   if (!d.product_id) { APP.showToast('Product is required', 'error'); return; }
-  if (!d.quantity_produced || parseFloat(d.quantity_produced) <= 0) { APP.showToast('Valid quantity is required', 'error'); return; }
+  const qtyProduced = parseFloat(d.quantity_produced);
+  if (!qtyProduced || qtyProduced <= 0) { APP.showToast('Valid quantity is required', 'error'); return; }
   
-  // Validate ingredients
   const validIngredients = currentIngredients.filter(i => i.inventory_id && parseFloat(i.quantity_used) > 0);
   
   try {
     const prodObj = cachedProducts.find(p => p.id == d.product_id);
+    let totalCost = 0;
+    validIngredients.forEach(i => totalCost += (parseFloat(i.quantity_used) || 0) * (parseFloat(i.unit_price) || 0));
+    
+    // The calculated cost price of the new finished good batch
+    const costPrice = totalCost / qtyProduced;
+    const finalBatchNo = d.batch_no || ('PRD-' + Date.now());
     
     const payload = {
       product_id: parseInt(d.product_id),
       product_name: prodObj ? prodObj.name : '',
-      batch_no: d.batch_no || '',
+      batch_no: finalBatchNo,
       formula_name: d.formula_name || '',
-      quantity_produced: parseFloat(d.quantity_produced),
+      quantity_produced: qtyProduced,
       date: d.date,
       notes: d.notes || ''
     };
@@ -171,10 +227,18 @@ async function saveProduction() {
     let savedId = editingProductionId;
     
     if (editingProductionId) {
+      // Find old batch to delete from stock_batches
+      const oldProd = allProductions.find(p => p.id === editingProductionId);
+      if (oldProd && oldProd.batch_no) {
+        await window.dbClient.from('stock_batches').delete()
+          .eq('item_id', oldProd.product_id)
+          .eq('item_type', 'Catalog')
+          .eq('batch_no', oldProd.batch_no);
+      }
+      
       const { error } = await window.dbClient.from('production_batches').update(payload).eq('id', editingProductionId);
       if (error) throw error;
       
-      // Delete old ingredients (Trigger restores stock)
       await window.dbClient.from('production_ingredients').delete().eq('production_id', editingProductionId);
     } else {
       const { data, error } = await window.dbClient.from('production_batches').insert([payload]).select();
@@ -197,6 +261,21 @@ async function saveProduction() {
       if (ingErr) throw ingErr;
     }
     
+    // Add finished good to stock_batches to INCREASE inventory
+    const stockBatchPayload = {
+      item_id: prodObj.id,
+      item_name: prodObj.name,
+      item_type: 'Catalog',
+      batch_no: finalBatchNo,
+      purchase_price: costPrice, // cost of production
+      initial_qty: qtyProduced,
+      current_qty: qtyProduced,
+      unit: prodObj.unit || 'Kg',
+      created_at: new Date(d.date || new Date()).toISOString()
+    };
+    
+    await window.dbClient.from('stock_batches').insert([stockBatchPayload]);
+    
     APP.showToast(editingProductionId ? 'Production updated!' : 'Production recorded!', 'success');
     APP.closeModal('production-modal');
     loadData();
@@ -208,9 +287,16 @@ async function saveProduction() {
 }
 
 async function deleteProduction(id) {
+  const b = allProductions.find(x => x.id === id);
   APP.showConfirm('Delete this production batch? This will restore the used raw materials back to inventory.', async () => {
     try {
-      // Trigger handles stock restoration automatically!
+      if (b && b.batch_no) {
+        await window.dbClient.from('stock_batches').delete()
+          .eq('item_id', b.product_id)
+          .eq('item_type', 'Catalog')
+          .eq('batch_no', b.batch_no);
+      }
+      
       const { error } = await window.dbClient.from('production_batches').delete().eq('id', id);
       if (error) throw error;
       
