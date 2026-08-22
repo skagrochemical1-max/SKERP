@@ -54,12 +54,12 @@
           const body = JSON.parse(config.body);
           
           const payload = {
-            product_id: body.productId || null,
-            product_name: body.name,
-            batch_size: body.baseVolume || 1000,
-            batch_unit: body.baseUnit || 'L',
-            notes: body.description || '',
-            status: 'Draft'
+            product_id: body.product_id || null,
+            product_name: body.product_name,
+            batch_size: body.batch_size || 1000,
+            batch_unit: body.batch_unit || 'L',
+            notes: body.notes || '',
+            status: body.status || 'Draft'
           };
           
           const { data, error } = await window.dbClient.from('formulations').insert([payload]).select();
@@ -86,11 +86,12 @@
           const body = JSON.parse(config.body);
           
           const payload = {
-            product_id: body.productId || null,
-            product_name: body.name,
-            batch_size: body.baseVolume || 1000,
-            batch_unit: body.baseUnit || 'L',
-            notes: body.description || ''
+            product_id: body.product_id || null,
+            product_name: body.product_name,
+            batch_size: body.batch_size || 1000,
+            batch_unit: body.batch_unit || 'L',
+            notes: body.notes || '',
+            status: body.status || 'Draft'
           };
           
           await window.dbClient.from('formulations').update(payload).eq('id', id);

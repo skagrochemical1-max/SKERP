@@ -812,7 +812,7 @@
 
   .page-body { padding: 12px; }
 
-  .transaction-kpi-grid { grid-template-columns: 1fr; gap: 10px; }
+  .transaction-kpi-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px; }
   .transaction-stat-card { padding: 16px; gap: 6px; }
   .transaction-stat-card .stat-value { font-size: 20px; }
 
@@ -843,13 +843,13 @@
 @media (max-width: 375px) {
   .page-body { padding: 10px; }
 
-  .kpi-grid { grid-template-columns: 1fr; gap: 8px; }
-  .kpi-grid > *:last-child { grid-column: span 1; }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px; }
+  .kpi-grid > *:last-child { grid-column: span 2 !important; }
 
   .page-header-left h2 { font-size: 16px; }
   .page-header-left p { font-size: 11px; }
 
-  .quick-stats { grid-template-columns: 1fr; gap: 8px; }
+  .quick-stats { grid-template-columns: repeat(2, 1fr) !important; gap: 8px; }
   .stat-card { padding: 10px; }
   .stat-value { font-size: 16px; }
   .stat-label { font-size: 8px; }
@@ -891,7 +891,7 @@
   .page-body { padding: 8px; }
   .topbar { padding: 0 8px; }
 
-  .kpi-grid { grid-template-columns: 1fr; gap: 8px; }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px; }
   .quick-actions { grid-template-columns: 1fr 1fr; gap: 6px; }
 
   .stat-value { font-size: 18px; }
