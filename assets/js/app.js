@@ -1,6 +1,17 @@
 /* ─── app.js ──────────────────────────────────────────── */
 /* Sidebar, Topbar, Toast, Modal, Spinner, Navigation      */
 
+// Register Service Worker for PWA
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    const isPagesDir = window.location.pathname.includes('/pages/');
+    const swUrl = isPagesDir ? '../sw.js' : './sw.js';
+    navigator.serviceWorker.register(swUrl).catch(err => {
+      console.log('SW Registration failed: ', err);
+    });
+  });
+}
+
 // Global Auth check
 (function() {
   if (window.dbClient) {

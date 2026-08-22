@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AgroChem ERP - Admin Login</title>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/style.css?v=45">
+  <link rel="stylesheet" href="assets/css/style.css?v=46">
   <script>
     (function() {
       const storedTheme = localStorage.getItem('theme');
@@ -251,6 +251,8 @@
     [data-theme="dark"] .theme-icon-moon { display: none; }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#10B981">
 </head>
 <body>
 
@@ -309,7 +311,7 @@ function toggleTheme() {
   localStorage.setItem('theme', nextTheme);
 }
 </script>
-<script src="assets/js/database.js?v=45"></script>
+<script src="assets/js/database.js?v=46"></script>
 <script>
 async function handleLogin(e) {
   e.preventDefault();
