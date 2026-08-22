@@ -250,6 +250,7 @@
     [data-theme="dark"] .theme-icon-sun { display: block !important; }
     [data-theme="dark"] .theme-icon-moon { display: none; }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -354,6 +355,5 @@ window.dbClient.auth.getSession().then(({ data: { session } }) => {
   }
 });
 </script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </body>
 </html>

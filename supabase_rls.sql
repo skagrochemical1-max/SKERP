@@ -1,0 +1,43 @@
+-- Enable RLS on all tables
+ALTER TABLE clients ENABLE ROW LEVEL SECURITY;
+ALTER TABLE suppliers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE products ENABLE ROW LEVEL SECURITY;
+ALTER TABLE product_packaging ENABLE ROW LEVEL SECURITY;
+ALTER TABLE inventory_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE stock_batches ENABLE ROW LEVEL SECURITY;
+ALTER TABLE stock_movements ENABLE ROW LEVEL SECURITY;
+ALTER TABLE purchases ENABLE ROW LEVEL SECURITY;
+ALTER TABLE purchase_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE accounts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE formulations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE formulation_ingredients ENABLE ROW LEVEL SECURITY;
+ALTER TABLE daily_transactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE daily_transaction_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE daily_transaction_materials ENABLE ROW LEVEL SECURITY;
+ALTER TABLE master_options ENABLE ROW LEVEL SECURITY;
+
+-- Create policies to allow ONLY authenticated users to access the data
+CREATE POLICY "Allow authenticated users full access" ON clients FOR ALL TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users full access" ON suppliers FOR ALL TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users full access" ON products FOR ALL TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users full access" ON product_packaging FOR ALL TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users full access" ON inventory_items FOR ALL TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users full access" ON stock_batches FOR ALL TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users full access" ON stock_movements FOR ALL TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users full access" ON purchases FOR ALL TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users full access" ON purchase_items FOR ALL TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users full access" ON orders FOR ALL TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users full access" ON order_items FOR ALL TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users full access" ON expenses FOR ALL TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users full access" ON accounts FOR ALL TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users full access" ON transactions FOR ALL TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users full access" ON formulations FOR ALL TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users full access" ON formulation_ingredients FOR ALL TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users full access" ON daily_transactions FOR ALL TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users full access" ON daily_transaction_items FOR ALL TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users full access" ON daily_transaction_materials FOR ALL TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users full access" ON master_options FOR ALL TO authenticated USING (true);
