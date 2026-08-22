@@ -30,7 +30,7 @@ async function loadDashboard() {
     if (actErr) throw actErr;
 
     const { data: recentActivities, error: recErr } = await window.dbClient.from('orders')
-      .select('identifier, client_name, date, total_amount, status')
+      .select('order_no, client_name, date, total_amount, status')
       .order('date', { ascending: false })
       .limit(5);
     if (recErr) throw recErr;
@@ -141,7 +141,7 @@ function renderRecentActivities(activities) {
     return `<div class="activity-item">
       <div class="activity-dot ${o.status === 'Delivered' ? 'green' : 'yellow'}"></div>
       <div class="activity-text">
-        <strong>${o.identifier || 'N/A'}</strong> — ${o.client_name || 'Guest'}
+        <strong>${o.order_no || 'N/A'}</strong> - ${o.client_name || 'Guest'}
         <p>${UTILS.fmtDate(o.date)} • ${UTILS.fmtCurrency(o.total_amount)}</p>
       </div>
       <div>${UTILS.statusBadge(o.status)}</div>
