@@ -41,9 +41,14 @@ async function loadPurchases() {
     const { data: supData } = await window.dbClient.from('suppliers').select('*');
     const suppliersList = supData || [];
     
+    // Retrieve purchase items to display in the table
+    const { data: piData } = await window.dbClient.from('purchase_items').select('*');
+    const allItems = piData || [];
+    
     allPurchases.forEach(p => {
       const match = suppliersList.find(s => s.id === p.supplier_id);
       p.supplier_display = match ? match.name : (p.supplier_name || '—');
+      p.items = allItems.filter(it => it.purchase_id === p.id);
     });
 
     renderTable(allPurchases);
