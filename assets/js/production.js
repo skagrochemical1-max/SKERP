@@ -160,15 +160,15 @@ function renderIngredientsTable() {
     
     return `<tr>
       <td>
-        <select class="form-input uss-inventory-select" style="padding: 6px;" onchange="updateIngredient(${idx}, 'inventory_id', this.value)">
+        <select class="form-select uss-inventory-select" onchange="updateIngredient(${idx}, 'inventory_id', this.value)">
           ${options.replace(`value="${line.inventory_id}"`, `value="${line.inventory_id}" selected`)}
         </select>
       </td>
       <td>
-        <input type="number" class="form-input" style="padding: 6px; width: 100%;" min="0.01" step="0.01" value="${line.quantity || ''}" onchange="updateIngredient(${idx}, 'quantity', this.value)">
+        <input type="number" class="form-input" style="width: 100%;" min="0.01" step="0.01" value="${line.quantity || ''}" onchange="updateIngredient(${idx}, 'quantity', this.value)">
       </td>
       <td>
-        <select class="form-input" style="padding: 6px; font-size: 12px;" onchange="updateIngredient(${idx}, 'unit', this.value)">
+        <select class="form-select" onchange="updateIngredient(${idx}, 'unit', this.value)">
           <option value="Kg" ${unitLabel === 'Kg' || unitLabel === 'kg' ? 'selected' : ''}>Kg</option>
           <option value="Litre" ${unitLabel === 'Litre' || unitLabel === 'L' || unitLabel === 'litre' ? 'selected' : ''}>Litre</option>
           <option value="g" ${unitLabel === 'g' || unitLabel === 'G' ? 'selected' : ''}>g</option>
@@ -178,7 +178,7 @@ function renderIngredientsTable() {
         </select>
       </td>
       <td>
-        <select class="form-input" style="padding: 6px; font-weight: bold; color: ${line.action === 'INCREASE' ? 'var(--success)' : 'var(--danger)'};" onchange="updateIngredient(${idx}, 'action', this.value)">
+        <select class="form-select" style="font-weight: bold; color: ${line.action === 'INCREASE' ? 'var(--success)' : 'var(--danger)'};" onchange="updateIngredient(${idx}, 'action', this.value)">
           <option value="DECREASE" ${line.action === 'DECREASE' ? 'selected' : ''}>DECREASE</option>
           <option value="INCREASE" ${line.action === 'INCREASE' ? 'selected' : ''}>INCREASE</option>
         </select>

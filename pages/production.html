@@ -4,15 +4,15 @@
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AgroChem ERP — Production</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../assets/css/style.css?v=56"><link rel="stylesheet" href="../assets/css/tables.css?v=56"><link rel="stylesheet" href="../assets/css/forms.css?v=56"><link rel="stylesheet" href="../assets/css/responsive.css?v=56">
-  <link rel="stylesheet" href="../assets/css/components/search-select.css?v=56">
+  <link rel="stylesheet" href="../assets/css/style.css?v=57"><link rel="stylesheet" href="../assets/css/tables.css?v=57"><link rel="stylesheet" href="../assets/css/forms.css?v=57"><link rel="stylesheet" href="../assets/css/responsive.css?v=57">
+  <link rel="stylesheet" href="../assets/css/components/search-select.css?v=57">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="manifest" href="../manifest.json">
   <meta name="theme-color" content="#10B981">
 </head>
 <body>
 <div class="app-layout" id="app-layout">
-  <script src="../assets/js/shared-layout.js?v=56"></script>
+  <script src="../assets/js/shared-layout.js?v=57"></script>
   <script>document.addEventListener('DOMContentLoaded',()=>LAYOUT.injectLayout('Production','Transactions'))</script>
   <main class="main-content" id="main-content">
     <div class="page-body">
@@ -80,7 +80,7 @@
           <div class="form-grid product-form-grid" style="padding: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
             <div class="form-group">
               <label class="form-label">Product Manufactured *</label>
-              <select class="form-input" name="product_id" id="product-select" required>
+              <select class="form-select" name="product_id" id="product-select" required>
                 <option value="">Select Product...</option>
               </select>
             </div>
@@ -106,15 +106,15 @@
             <p>Select which inventory items to consume (DECREASE) and which items to output (INCREASE).</p>
           </div>
           <div style="padding: 20px;">
-            <div class="line-items-container">
-              <table class="line-items-table" style="width: 100%; text-align: left; margin-bottom: 8px;">
+            <div class="line-items-wrap">
+              <table class="line-items-table" style="margin-bottom:8px">
                 <thead>
-                  <tr style="border-bottom: 1px solid var(--border); padding-bottom: 8px;">
-                    <th style="padding-bottom: 8px; width: 40%;">Inventory Item</th>
-                    <th style="padding-bottom: 8px; width: 20%;">Quantity</th>
-                    <th style="padding-bottom: 8px; width: 15%;">Unit</th>
-                    <th style="padding-bottom: 8px; width: 20%;">Action</th>
-                    <th style="padding-bottom: 8px; width: 5%;"></th>
+                  <tr>
+                    <th style="width: 40%;">Inventory Item</th>
+                    <th style="width: 20%;">Quantity</th>
+                    <th style="width: 15%;">Unit</th>
+                    <th style="width: 20%;">Action</th>
+                    <th style="width: 5%;"></th>
                   </tr>
                 </thead>
                 <tbody id="ingredients-tbody"></tbody>
@@ -135,9 +135,9 @@
   </div>
 </div>
 
-<script src="../assets/js/utils.js?v=56"></script>
-<script src="../assets/js/database.js?v=56"></script>
-<script src="../assets/js/app.js?v=56"></script>
-<script src="../assets/js/production.js?v=56"></script>
+<script src="../assets/js/utils.js?v=57"></script>
+<script src="../assets/js/database.js?v=57"></script>
+<script src="../assets/js/app.js?v=57"></script>
+<script src="../assets/js/production.js?v=57"></script>
 </body>
 </html>
