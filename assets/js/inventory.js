@@ -460,19 +460,27 @@ function renderStockBreakdownBanner(formId, item, overrideOpeningQty = 0) {
   }
 
   const openingQty = parseFloat(overrideOpeningQty) || parseFloat(item.opening_qty) || 0;
-  // If item comes from DB directly via eq.single(), it might only have .stock, not .total_stock
-  const totalStock = parseFloat(item.total_stock) || parseFloat(item.stock) || openingQty;
-  const otherStock = totalStock - openingQty;
+  
+  // Safely parse total stock without failing on 0
+  let totalStock = 0;
+  if (item.total_stock !== undefined && item.total_stock !== null) {
+      totalStock = parseFloat(item.total_stock);
+  } else if (item.stock !== undefined && item.stock !== null) {
+      totalStock = parseFloat(item.stock);
+  } else {
+      totalStock = openingQty;
+  }
+  
   const unitStr = item.unit || 'Nos';
 
   banner.innerHTML = `
     <div>
-      <span style="font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); font-weight:600; display:block; margin-bottom:4px;">Stock Composition Breakdown</span>
-      <span style="font-size:13px; font-weight:500;">Opening Stock Batch: ${openingQty.toFixed(2)} ${unitStr} <span style="color:var(--text-muted);margin:0 6px">|</span> Added Stock (Purchases/Adjustments): ${otherStock.toFixed(2)} ${unitStr}</span>
+      <span style="font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); font-weight:600; display:block; margin-bottom:4px;">Opening Stock Entry</span>
+      <span style="font-size:15px; font-weight:600;">${openingQty.toFixed(2)} ${unitStr}</span>
     </div>
     <div style="text-align:right">
-      <span style="font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); font-weight:600; display:block; margin-bottom:4px;">Total Stock In Hand</span>
-      <span style="font-size:16px; font-weight:700; color:var(--success);">${totalStock.toFixed(2)} ${unitStr}</span>
+      <span style="font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); font-weight:600; display:block; margin-bottom:4px;">Current Live Stock</span>
+      <span style="font-size:18px; font-weight:800; color:${totalStock <= 0 ? 'var(--danger)' : 'var(--success)'};">${totalStock.toFixed(2)} ${unitStr}</span>
     </div>
   `;
 }
