@@ -183,6 +183,12 @@ async function openEdit(id) {
     const { data: p, error } = await window.dbClient.from('purchases').select('*').eq('id', id).single();
     if (error) throw error;
     
+    // Fetch line items for this purchase
+    const { data: piData, error: piError } = await window.dbClient.from('purchase_items').select('*').eq('purchase_id', id);
+    if (!piError && piData) {
+      p.items = piData;
+    }
+    
     document.getElementById('modal-title').textContent = 'Edit Purchase';
     UTILS.populateForm('purchase-form', p);
     UTILS.applyDefaultDateInputs(document.getElementById('purchase-form'), { skipFieldNames: ['due_date'] });
