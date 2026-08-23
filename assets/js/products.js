@@ -842,7 +842,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderUnitManager();
   });
   
-  const tabBtns = document.querySelectorAll('.table-tabs .tab-btn');
+  const tabBtns = document.querySelectorAll('.tabs .tab-btn');
   tabBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       activeProductTab = btn.dataset.tab;
