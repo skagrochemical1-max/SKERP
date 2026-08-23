@@ -35,13 +35,19 @@ async function loadDashboard() {
       .limit(5);
     if (recErr) throw recErr;
 
-    const { data: stockData, error: stockErr } = await window.dbClient.from('products').select('name, unit, reorder_level');
-    if (stockErr) throw stockErr;
-    
-    const stockAlerts = (stockData || [])
-      .filter(p => parseFloat(p.stock || 0) <= (p.reorder_level > 0 ? p.reorder_level : 50))
-      .map(p => ({ ...p, type: 'Product' }))
-      .slice(0, 4);
+      const { data: invData, error: invErr } = await window.dbClient.from('inventory_items').select('name, unit, reorder_level, stock, category');
+      if (invErr) throw invErr;
+      
+      const stockAlerts = (invData || [])
+        .filter(p => {
+           const stock = parseFloat(p.stock || 0);
+           const threshold = parseFloat(p.reorder_level || 0);
+           // Alert if stock is less than or equal to threshold
+           // Or if threshold is 0, alert if stock is exactly 0
+           return stock <= threshold;
+        })
+        .map(p => ({ ...p, type: p.category || 'Item' }))
+        .sort((a, b) => parseFloat(a.stock || 0) - parseFloat(b.stock || 0));
 
     const stats = {
       kpis: { revenue, activeOrders: activeOrders || 0 },
@@ -159,10 +165,10 @@ function renderStockAlerts(alerts) {
   }
   
   el.innerHTML = alerts.map(p => {
-    const threshold = p.reorder_level > 0 ? p.reorder_level : 50;
+    const threshold = parseFloat(p.reorder_level || 0);
     return `<div class="stock-alert-item">
       <div class="stock-alert-content">
-        <div class="stock-alert-name">${p.name || 'Unknown'} <span class="badge ${p.type === 'Product' ? 'badge-purple' : 'badge-info'}" style="font-size: 9px; padding: 2px 6px; margin-left: 4px;">${p.type || 'Raw'}</span></div>
+        <div class="stock-alert-name">${p.name || 'Unknown'} <span class="badge ${p.type === 'Catalog' ? 'badge-purple' : 'badge-info'}" style="font-size: 9px; padding: 2px 6px; margin-left: 4px;">${p.type || 'Item'}</span></div>
         <div class="stock-alert-meta">${parseFloat(p.stock || 0).toFixed(1)} / ${threshold} ${p.unit || ''}</div>
       </div>
       <span class="badge badge-danger">Low</span>
