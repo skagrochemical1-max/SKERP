@@ -30,8 +30,8 @@
           const result = (forms || []).map(f => {
             const fIngs = (ings || []).filter(i => i.formulation_id === f.id).map(i => ({
               id: i.id,
-              product_name: i.ingredient_name,
-              product_id: '',
+              product_name: i.product_name,
+              product_id: i.product_id || '',
               percentage: i.percentage,
               quantity: i.quantity,
               unit: i.unit,
@@ -72,7 +72,8 @@
           if (body.ingredients && body.ingredients.length > 0) {
             const ingPayload = body.ingredients.map(ing => ({
               formulation_id: newId,
-              ingredient_name: ing.product_name || ing.name,
+              product_name: ing.product_name || ing.name,
+              product_id: ing.product_id || null,
               percentage: ing.percentage || 0,
               quantity: ing.quantity || 0,
               unit: ing.unit || '',
@@ -103,7 +104,8 @@
           if (body.ingredients && body.ingredients.length > 0) {
             const ingPayload = body.ingredients.map(ing => ({
               formulation_id: id,
-              ingredient_name: ing.product_name || ing.name,
+              product_name: ing.product_name || ing.name,
+              product_id: ing.product_id || null,
               percentage: ing.percentage || 0,
               quantity: ing.quantity || 0,
               unit: ing.unit || '',
