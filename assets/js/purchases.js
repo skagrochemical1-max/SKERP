@@ -353,7 +353,7 @@ async function savePurchase() {
   const total = purchaseItems.reduce((s, it) => s + it.total, 0);
   
   try {
-    const payload = {
+    const purchasePayload = {
       invoice_no: d.invoice_no || '',
       supplier_id: d.supplier_id,
       supplier_name: supplierName,
@@ -362,29 +362,93 @@ async function savePurchase() {
       status: d.status || 'Pending',
       total_amount: total,
       paid_amount: parseFloat(d.paid_amount) || 0.00,
-      notes: d.notes || '',
-      items: purchaseItems.map(it => ({
-        item_id: it.item_id,
-        item_name: it.item_name,
-        item_type: it.item_type,
-        quantity: parseFloat(it.quantity) || 0,
-        unit_price: parseFloat(it.unit_price) || 0,
-        batch_no: it.batch_no || '',
-        expiry_date: it.expiry_date || null,
-        unit: it.unit || 'Nos',
-        total: parseFloat(it.total) || 0
-      }))
+      notes: d.notes || ''
     };
 
-    let error;
+    let pId = editingPurchaseId;
+
     if (editingPurchaseId) {
-      const res = await window.dbClient.from('purchases').update(payload).eq('id', editingPurchaseId);
-      error = res.error;
+      // 1. Check old status to see if we need to reverse stock
+      const { data: oldPurchase } = await window.dbClient.from('purchases').select('status').eq('id', editingPurchaseId).single();
+      const wasDelivered = oldPurchase && oldPurchase.status === 'Delivered';
+
+      // 2. Reverse stock & delete old stock_batches if it was delivered
+      if (wasDelivered) {
+        const { data: oldItems } = await window.dbClient.from('purchase_items').select('*').eq('purchase_id', editingPurchaseId);
+        if (oldItems) {
+          for (const oi of oldItems) {
+            const { data: inv } = await window.dbClient.from('inventory_items').select('stock').eq('id', oi.item_id).single();
+            if (inv) {
+              const newStock = parseFloat(inv.stock || 0) - parseFloat(oi.quantity || 0);
+              await window.dbClient.from('inventory_items').update({ stock: newStock }).eq('id', oi.item_id);
+            }
+          }
+        }
+        await window.dbClient.from('stock_batches').delete().eq('purchase_id', editingPurchaseId);
+      }
+
+      // 3. Delete old purchase items
+      await window.dbClient.from('purchase_items').delete().eq('purchase_id', editingPurchaseId);
+
+      // 4. Update purchase record
+      const { error } = await window.dbClient.from('purchases').update(purchasePayload).eq('id', editingPurchaseId);
+      if (error) throw error;
+      
     } else {
-      const res = await window.dbClient.from('purchases').insert([payload]);
-      error = res.error;
+      // Create NEW purchase
+      const { data, error } = await window.dbClient.from('purchases').insert([purchasePayload]).select();
+      if (error) throw error;
+      pId = data[0].id;
     }
-    if (error) throw new Error(error.message || 'Failed to save purchase');
+
+    // Prepare line items
+    const newItems = purchaseItems.map(it => ({
+      purchase_id: pId,
+      item_id: it.item_id,
+      item_name: it.item_name,
+      item_type: it.item_type || 'Inventory',
+      quantity: parseFloat(it.quantity) || 0,
+      unit_price: parseFloat(it.unit_price) || 0,
+      batch_no: it.batch_no || '',
+      expiry_date: it.expiry_date || null,
+      unit: it.unit || 'Nos',
+      total: parseFloat(it.total) || 0
+    }));
+
+    // Insert line items
+    if (newItems.length > 0) {
+      const { error: piError } = await window.dbClient.from('purchase_items').insert(newItems);
+      if (piError) throw piError;
+    }
+
+    // Apply new stock if Delivered
+    if (purchasePayload.status === 'Delivered' && newItems.length > 0) {
+      const stockBatches = [];
+      for (const ni of newItems) {
+        const { data: inv } = await window.dbClient.from('inventory_items').select('stock').eq('id', ni.item_id).single();
+        if (inv) {
+          const newStock = parseFloat(inv.stock || 0) + parseFloat(ni.quantity || 0);
+          await window.dbClient.from('inventory_items').update({ stock: newStock }).eq('id', ni.item_id);
+        }
+        
+        stockBatches.push({
+          item_id: ni.item_id,
+          item_name: ni.item_name,
+          item_type: 'Inventory',
+          batch_no: ni.batch_no || ('PUR-' + Date.now() + '-' + Math.floor(Math.random()*1000)),
+          purchase_id: pId,
+          supplier_id: purchasePayload.supplier_id,
+          purchase_price: ni.unit_price,
+          initial_qty: ni.quantity,
+          current_qty: ni.quantity,
+          expiry_date: ni.expiry_date || null,
+          unit: ni.unit
+        });
+      }
+      if (stockBatches.length > 0) {
+        await window.dbClient.from('stock_batches').insert(stockBatches);
+      }
+    }
 
     APP.showToast(editingPurchaseId ? 'Purchase updated and inventory synced!' : 'Purchase added and inventory synced!', 'success');
     APP.closeModal('purchase-modal');
@@ -398,6 +462,25 @@ async function savePurchase() {
 async function deletePurchase(id) {
   APP.showConfirm('Delete this purchase and all its line items?', async () => {
     try {
+      // 1. Check if it was Delivered to reverse stock
+      const { data: oldPurchase } = await window.dbClient.from('purchases').select('status').eq('id', id).single();
+      const wasDelivered = oldPurchase && oldPurchase.status === 'Delivered';
+
+      if (wasDelivered) {
+        const { data: oldItems } = await window.dbClient.from('purchase_items').select('*').eq('purchase_id', id);
+        if (oldItems) {
+          for (const oi of oldItems) {
+            const { data: inv } = await window.dbClient.from('inventory_items').select('stock').eq('id', oi.item_id).single();
+            if (inv) {
+              const newStock = parseFloat(inv.stock || 0) - parseFloat(oi.quantity || 0);
+              await window.dbClient.from('inventory_items').update({ stock: newStock }).eq('id', oi.item_id);
+            }
+          }
+        }
+        await window.dbClient.from('stock_batches').delete().eq('purchase_id', id);
+      }
+
+      // 2. Delete the purchase (purchase_items cascades)
       const { error } = await window.dbClient.from('purchases').delete().eq('id', id);
       if (error) throw new Error(error.message || 'Failed to delete purchase');
       
