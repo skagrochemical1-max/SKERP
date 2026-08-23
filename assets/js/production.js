@@ -132,7 +132,15 @@ function removeIngredientRow(idx) {
 
 function updateIngredient(idx, field, value) {
   currentLines[idx][field] = value;
-  renderIngredientsTable(); // Re-render for unit updates if needed
+  
+  if (field === 'inventory_id') {
+    const inv = cachedInventory.find(i => i.id == value);
+    if (inv) {
+      currentLines[idx].unit = inv.unit || 'Kg';
+    }
+  }
+  
+  renderIngredientsTable();
 }
 
 function renderIngredientsTable() {
@@ -148,7 +156,7 @@ function renderIngredientsTable() {
   
   tbody.innerHTML = currentLines.map((line, idx) => {
     const inv = cachedInventory.find(i => i.id == line.inventory_id);
-    const unitLabel = inv ? inv.unit : '';
+    const unitLabel = line.unit || (inv ? inv.unit : '');
     
     return `<tr>
       <td>
@@ -157,10 +165,17 @@ function renderIngredientsTable() {
         </select>
       </td>
       <td>
-        <div style="display: flex; align-items: center; gap: 5px;">
-          <input type="number" class="form-input" style="padding: 6px; width: 80px;" min="0.01" step="0.01" value="${line.quantity || ''}" onchange="updateIngredient(${idx}, 'quantity', this.value)">
-          <span style="font-size: 11px; color: var(--text-muted);">${unitLabel}</span>
-        </div>
+        <input type="number" class="form-input" style="padding: 6px; width: 100%;" min="0.01" step="0.01" value="${line.quantity || ''}" onchange="updateIngredient(${idx}, 'quantity', this.value)">
+      </td>
+      <td>
+        <select class="form-input" style="padding: 6px; font-size: 12px;" onchange="updateIngredient(${idx}, 'unit', this.value)">
+          <option value="Kg" ${unitLabel === 'Kg' || unitLabel === 'kg' ? 'selected' : ''}>Kg</option>
+          <option value="Litre" ${unitLabel === 'Litre' || unitLabel === 'L' || unitLabel === 'litre' ? 'selected' : ''}>Litre</option>
+          <option value="g" ${unitLabel === 'g' || unitLabel === 'G' ? 'selected' : ''}>g</option>
+          <option value="ml" ${unitLabel === 'ml' || unitLabel === 'ML' ? 'selected' : ''}>ml</option>
+          <option value="Nos" ${unitLabel === 'Nos' || unitLabel === 'nos' ? 'selected' : ''}>Nos</option>
+          ${!['Kg', 'Litre', 'g', 'ml', 'Nos', 'kg', 'L', 'litre', 'G', 'ML', 'nos'].includes(unitLabel) && unitLabel ? `<option value="${unitLabel}" selected>${unitLabel}</option>` : ''}
+        </select>
       </td>
       <td>
         <select class="form-input" style="padding: 6px; font-weight: bold; color: ${line.action === 'INCREASE' ? 'var(--success)' : 'var(--danger)'};" onchange="updateIngredient(${idx}, 'action', this.value)">
