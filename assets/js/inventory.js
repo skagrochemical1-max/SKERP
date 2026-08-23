@@ -21,9 +21,28 @@ async function loadInventory() {
     const { data: items, error } = await window.dbClient.from('inventory_items').select('*');
     if (error) throw error;
     
+    // Compute dynamic avg cost based on available batches (opening stock + purchases)
+    const { data: batches } = await window.dbClient.from('stock_batches').select('item_id, current_qty, purchase_price').eq('item_type', 'Inventory');
+    const costMap = {};
+    if (batches) {
+      batches.forEach(b => {
+        if (!costMap[b.item_id]) costMap[b.item_id] = { totalCost: 0, totalQty: 0 };
+        const qty = parseFloat(b.current_qty) || 0;
+        const price = parseFloat(b.purchase_price) || 0;
+        if (qty > 0) {
+          costMap[b.item_id].totalCost += (qty * price);
+          costMap[b.item_id].totalQty += qty;
+        }
+      });
+    }
+    
     allInventory = items.map(ii => {
       const stock = parseFloat(ii.stock) || 0;
-      const cost = parseFloat(ii.avg_cost) || 0;
+      let cost = 0;
+      if (costMap[ii.id] && costMap[ii.id].totalQty > 0) {
+         cost = costMap[ii.id].totalCost / costMap[ii.id].totalQty;
+      }
+      
       return {
         id: ii.id,
         name: ii.name,
@@ -427,7 +446,7 @@ function toggleOpeningStockSection() {
   });
 }
 
-function renderStockBreakdownBanner(formId, item) {
+function renderStockBreakdownBanner(formId, item, overrideOpeningQty = 0) {
   const form = document.getElementById(formId);
   if (!form) return;
 
@@ -440,21 +459,20 @@ function renderStockBreakdownBanner(formId, item) {
     if (panel2) panel2.insertBefore(banner, panel2.firstChild);
   }
 
-  const openingQty = parseFloat(item.opening_qty) || 0;
-  const totalStock = parseFloat(item.total_stock) || openingQty;
-  const otherStock = Math.max(0, totalStock - openingQty);
+  const openingQty = parseFloat(overrideOpeningQty) || parseFloat(item.opening_qty) || 0;
+  // If item comes from DB directly via eq.single(), it might only have .stock, not .total_stock
+  const totalStock = parseFloat(item.total_stock) || parseFloat(item.stock) || openingQty;
+  const otherStock = totalStock - openingQty;
   const unitStr = item.unit || 'Nos';
 
   banner.innerHTML = `
     <div>
-      <span style="font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); font-weight:700;">Stock Composition Breakdown</span>
-      <div style="font-size:13px; color:var(--text-main); margin-top:4px; font-weight:500;">
-        Opening Stock Batch: <strong>${openingQty.toFixed(2)} ${unitStr}</strong> | Added Stock (Purchases/Adjustments): <strong>${otherStock.toFixed(2)} ${unitStr}</strong>
-      </div>
+      <span style="font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); font-weight:600; display:block; margin-bottom:4px;">Stock Composition Breakdown</span>
+      <span style="font-size:13px; font-weight:500;">Opening Stock Batch: ${openingQty.toFixed(2)} ${unitStr} <span style="color:var(--text-muted);margin:0 6px">|</span> Added Stock (Purchases/Adjustments): ${otherStock.toFixed(2)} ${unitStr}</span>
     </div>
-    <div style="text-align:right;">
-      <span style="font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); font-weight:700;">Total Stock in Hand</span>
-      <div style="font-size:18px; font-weight:800; color:var(--accent);">${totalStock.toFixed(2)} ${unitStr}</div>
+    <div style="text-align:right">
+      <span style="font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); font-weight:600; display:block; margin-bottom:4px;">Total Stock In Hand</span>
+      <span style="font-size:16px; font-weight:700; color:var(--success);">${totalStock.toFixed(2)} ${unitStr}</span>
     </div>
   `;
 }
@@ -543,9 +561,22 @@ async function openEdit(type, id) {
 
     toggleOpeningStockSection();
 
-    const openingQty = it.opening_qty || '';
-    const openingCost = it.opening_cost || '';
-    const openingBatchNo = it.opening_batch_no || '';
+    // Fetch opening stock batch to populate fields
+    let openingQty = '';
+    let openingCost = '';
+    let openingBatchNo = '';
+    
+    const { data: batches } = await window.dbClient.from('stock_batches')
+      .select('*').eq('item_id', id).eq('item_type', 'Inventory')
+      .order('id', { ascending: true }).limit(1);
+      
+    if (batches && batches.length > 0) {
+      const b = batches[0];
+      // Only treat it as an opening batch if it has an OPEN- prefix or is the very first recorded batch
+      openingQty = b.initial_qty || '';
+      openingCost = b.purchase_price || '';
+      openingBatchNo = b.batch_no || '';
+    }
 
     if (it.category === 'Technical') {
       goToInventoryStep('technical', 1);
@@ -553,7 +584,7 @@ async function openEdit(type, id) {
       await loadMasterOptions(it.unit);
       UTILS.populateForm('technical-form', it);
       populateTechUnitSelect(it.unit || 'Nos');
-      renderStockBreakdownBanner('technical-form', it);
+      renderStockBreakdownBanner('technical-form', it, openingQty);
       
       const typeSelect = document.querySelector('#technical-form [name="item_type"]');
       if (typeSelect) typeSelect.value = type;
@@ -571,7 +602,7 @@ async function openEdit(type, id) {
       document.getElementById('bottle-modal-title').textContent = 'Edit Bottle Option';
       document.getElementById('bottle-form').reset();
       populateDependentTypes(masterCache.bottles, 'tech-bottle-type-select', 'tech-bottle-size-select');
-      renderStockBreakdownBanner('bottle-form', it);
+      renderStockBreakdownBanner('bottle-form', it, openingQty);
       
       const typeSelect = document.getElementById('tech-bottle-type-select');
       if (typeSelect) {
@@ -601,7 +632,7 @@ async function openEdit(type, id) {
       document.getElementById('box-modal-title').textContent = 'Edit Box Option';
       document.getElementById('box-form').reset();
       populateDependentTypes(masterCache.boxes, 'tech-box-type-select', 'tech-box-size-select');
-      renderStockBreakdownBanner('box-form', it);
+      renderStockBreakdownBanner('box-form', it, openingQty);
       
       const typeSelect = document.getElementById('tech-box-type-select');
       if (typeSelect) {
@@ -632,7 +663,7 @@ async function openEdit(type, id) {
       document.getElementById('label-form').reset();
       const labelOpts = (masterCache.labels && masterCache.labels.length > 0) ? masterCache.labels : masterCache.bottles;
       populateDependentTypes(labelOpts, 'tech-label-type-select', 'tech-label-size-select');
-      renderStockBreakdownBanner('label-form', it);
+      renderStockBreakdownBanner('label-form', it, openingQty);
       
       const typeSelect = document.getElementById('tech-label-type-select');
       if (typeSelect) {
@@ -661,7 +692,7 @@ async function openEdit(type, id) {
       goToInventoryStep('other', 1);
       document.getElementById('other-modal-title').textContent = 'Edit Other Item';
       UTILS.populateForm('other-form', it);
-      renderStockBreakdownBanner('other-form', it);
+      renderStockBreakdownBanner('other-form', it, openingQty);
       const typeSelect = document.querySelector('#other-form [name="item_type"]');
       if (typeSelect) typeSelect.value = type;
       
@@ -691,36 +722,75 @@ async function saveInventoryItemAPI(payload) {
     delete payload.opening_cost;
     delete payload.opening_batch_no;
 
-    // Set initial stock if creating new item
-    if (!editingItemId && openingQty) {
-      payload.stock = openingQty;
-    }
-
     let savedId = editingItemId;
 
     if (editingItemId) {
+      // 1. Fetch old opening batch to find differences
+      let oldOpeningQty = 0;
+      let oldOpeningBatchId = null;
+      
+      const { data: batches } = await window.dbClient.from('stock_batches')
+        .select('id, initial_qty').eq('item_id', editingItemId).eq('item_type', 'Inventory')
+        .order('id', { ascending: true }).limit(1);
+        
+      if (batches && batches.length > 0) {
+        oldOpeningQty = parseFloat(batches[0].initial_qty) || 0;
+        oldOpeningBatchId = batches[0].id;
+      }
+      
+      // 2. Compute stock difference and update inventory item
+      const { data: oldItem } = await window.dbClient.from('inventory_items').select('stock').eq('id', editingItemId).single();
+      const currentTotalStock = parseFloat(oldItem?.stock || 0);
+      const stockDifference = openingQty - oldOpeningQty;
+      
+      payload.stock = currentTotalStock + stockDifference;
+      
       const { error } = await window.dbClient.from('inventory_items').update(payload).eq('id', editingItemId);
       if (error) throw error;
+      
+      // 3. Update or Insert the opening batch
+      if (oldOpeningBatchId) {
+        await window.dbClient.from('stock_batches').update({
+           initial_qty: openingQty,
+           current_qty: openingQty, // Re-syncing for simplicity if they edit opening batch
+           purchase_price: openingCost,
+           batch_no: openingBatchNo || ('OPEN-' + Date.now())
+        }).eq('id', oldOpeningBatchId);
+      } else if (openingQty > 0) {
+        const batchPayload = {
+          item_id: savedId,
+          item_name: payload.name,
+          item_type: 'Inventory',
+          batch_no: openingBatchNo || ('OPEN-' + Date.now()),
+          purchase_price: openingCost,
+          initial_qty: openingQty,
+          current_qty: openingQty,
+          unit: payload.unit || ''
+        };
+        await window.dbClient.from('stock_batches').insert([batchPayload]);
+      }
     } else {
+      // Creating NEW item
+      if (openingQty) {
+        payload.stock = openingQty;
+      }
       const { data, error } = await window.dbClient.from('inventory_items').insert([payload]).select();
       if (error) throw error;
       savedId = data[0].id;
-    }
-
-    // Add opening batch record if provided
-    if (!editingItemId && openingQty > 0) {
-      const batchPayload = {
-        item_id: savedId,
-        item_name: payload.name,
-        item_type: 'Inventory',
-        batch_no: openingBatchNo || ('OPEN-' + Date.now()),
-        purchase_price: openingCost,
-        initial_qty: openingQty,
-        current_qty: openingQty,
-        unit: payload.unit || ''
-      };
-      // We do not await/block heavily on this failing since item is already saved
-      await window.dbClient.from('stock_batches').insert([batchPayload]);
+      
+      if (openingQty > 0) {
+        const batchPayload = {
+          item_id: savedId,
+          item_name: payload.name,
+          item_type: 'Inventory',
+          batch_no: openingBatchNo || ('OPEN-' + Date.now()),
+          purchase_price: openingCost,
+          initial_qty: openingQty,
+          current_qty: openingQty,
+          unit: payload.unit || ''
+        };
+        await window.dbClient.from('stock_batches').insert([batchPayload]);
+      }
     }
 
     return { success: true };
