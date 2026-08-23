@@ -72,11 +72,11 @@
           if (body.ingredients && body.ingredients.length > 0) {
             const ingPayload = body.ingredients.map(ing => ({
               formulation_id: newId,
-              ingredient_name: ing.name,
+              ingredient_name: ing.product_name || ing.name,
               percentage: ing.percentage || 0,
               quantity: ing.quantity || 0,
               unit: ing.unit || '',
-              cost_per_unit: ing.costPerUnit || 0
+              cost_per_unit: ing.cost_per_unit || ing.costPerUnit || 0
             }));
             await window.dbClient.from('formulation_ingredients').insert(ingPayload);
           }
@@ -103,11 +103,11 @@
           if (body.ingredients && body.ingredients.length > 0) {
             const ingPayload = body.ingredients.map(ing => ({
               formulation_id: id,
-              ingredient_name: ing.name,
+              ingredient_name: ing.product_name || ing.name,
               percentage: ing.percentage || 0,
               quantity: ing.quantity || 0,
               unit: ing.unit || '',
-              cost_per_unit: ing.costPerUnit || 0
+              cost_per_unit: ing.cost_per_unit || ing.costPerUnit || 0
             }));
             await window.dbClient.from('formulation_ingredients').insert(ingPayload);
           }

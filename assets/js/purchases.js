@@ -404,14 +404,13 @@ async function savePurchase() {
     // Prepare line items
     const newItems = purchaseItems.map(it => ({
       purchase_id: pId,
-      item_id: it.item_id,
+      item_id: it.item_id || null,
       item_name: it.item_name,
       item_type: it.item_type || 'Inventory',
       quantity: parseFloat(it.quantity) || 0,
       unit_price: parseFloat(it.unit_price) || 0,
       batch_no: it.batch_no || '',
       expiry_date: it.expiry_date || null,
-      unit: it.unit || 'Nos',
       total: parseFloat(it.total) || 0
     }));
 
