@@ -25,6 +25,17 @@ async function loadPurchases() {
     const { data: pData, error: pErr } = await window.dbClient.from('purchases').select('*').order('date', {ascending: false});
     if (pErr) throw pErr;
     allPurchases = pData || [];
+
+    // Auto-fix any null purchase_no
+    let needsRefresh = false;
+    for (let p of allPurchases) {
+      if (!p.purchase_no) {
+        const newNo = 'PO-' + Date.now().toString().slice(-6) + Math.floor(Math.random() * 100);
+        p.purchase_no = newNo;
+        await window.dbClient.from('purchases').update({ purchase_no: newNo }).eq('id', p.id);
+        needsRefresh = true;
+      }
+    }
     
     // Retrieve supplier list to map display names
     const { data: supData } = await window.dbClient.from('suppliers').select('*');

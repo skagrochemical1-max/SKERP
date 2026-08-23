@@ -28,7 +28,7 @@
           const { data: ings } = await window.dbClient.from('formulation_ingredients').select('*');
           
           const result = (forms || []).map(f => {
-            const fIngs = (ings || []).filter(i => i.formulation_id === f.id).map(i => ({
+            const fIngs = (ings || []).filter(i => i.formulation_id == f.id).map(i => ({
               id: i.id,
               product_name: i.product_name,
               product_id: i.product_id || '',
@@ -70,16 +70,24 @@
           const newId = data[0].id;
           
           if (body.ingredients && body.ingredients.length > 0) {
-            const ingPayload = body.ingredients.map(ing => ({
-              formulation_id: newId,
-              product_name: ing.product_name || ing.name,
-              product_id: ing.product_id || null,
-              percentage: ing.percentage || 0,
-              quantity: ing.quantity || 0,
-              unit: ing.unit || '',
-              cost_per_unit: ing.cost_per_unit || ing.costPerUnit || 0
-            }));
-            await window.dbClient.from('formulation_ingredients').insert(ingPayload);
+            const ingPayload = body.ingredients.map(ing => {
+              let pName = ing.product_name || ing.name || '';
+              let pId = ing.product_id || ing.productId || null;
+              if (pId === '' || Number.isNaN(Number(pId))) pId = null;
+              
+              return {
+                formulation_id: Number(newId),
+                product_name: pName,
+                product_id: pId,
+                percentage: Number(ing.percentage) || 0,
+                quantity: Number(ing.quantity) || 0,
+                unit: ing.unit || '',
+                cost_per_unit: Number(ing.cost_per_unit) || Number(ing.costPerUnit) || 0,
+                entry_mode: ing.entry_mode || ing.entryMode || 'percentage'
+              };
+            });
+            const { error: insertErr } = await window.dbClient.from('formulation_ingredients').insert(ingPayload);
+            if (insertErr) throw new Error(insertErr.message);
           }
           
           return jsonResponse({ id: newId });
@@ -102,16 +110,24 @@
           await window.dbClient.from('formulation_ingredients').delete().eq('formulation_id', id);
           
           if (body.ingredients && body.ingredients.length > 0) {
-            const ingPayload = body.ingredients.map(ing => ({
-              formulation_id: id,
-              product_name: ing.product_name || ing.name,
-              product_id: ing.product_id || null,
-              percentage: ing.percentage || 0,
-              quantity: ing.quantity || 0,
-              unit: ing.unit || '',
-              cost_per_unit: ing.cost_per_unit || ing.costPerUnit || 0
-            }));
-            await window.dbClient.from('formulation_ingredients').insert(ingPayload);
+            const ingPayload = body.ingredients.map(ing => {
+              let pName = ing.product_name || ing.name || '';
+              let pId = ing.product_id || ing.productId || null;
+              if (pId === '' || Number.isNaN(Number(pId))) pId = null;
+              
+              return {
+                formulation_id: Number(id),
+                product_name: pName,
+                product_id: pId,
+                percentage: Number(ing.percentage) || 0,
+                quantity: Number(ing.quantity) || 0,
+                unit: ing.unit || '',
+                cost_per_unit: Number(ing.cost_per_unit) || Number(ing.costPerUnit) || 0,
+                entry_mode: ing.entry_mode || ing.entryMode || 'percentage'
+              };
+            });
+            const { error: insertErr } = await window.dbClient.from('formulation_ingredients').insert(ingPayload);
+            if (insertErr) throw new Error(insertErr.message);
           }
           
           return jsonResponse({ success: true });
