@@ -316,8 +316,8 @@ function toggleTheme() {
 async function handleLogin(e) {
   e.preventDefault();
   
-  const email = document.getElementById('username').value;
-  const password = document.getElementById('password').value;
+  const email = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value.trim();
   const btn = document.getElementById('login-btn');
   const btnText = document.getElementById('btn-text');
   const errorDiv = document.getElementById('error-message');
