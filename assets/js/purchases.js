@@ -396,6 +396,7 @@ async function savePurchase() {
       
     } else {
       // Create NEW purchase
+      purchasePayload.purchase_no = 'PO-' + Date.now().toString().slice(-6);
       const { data, error } = await window.dbClient.from('purchases').insert([purchasePayload]).select();
       if (error) throw error;
       pId = data[0].id;
