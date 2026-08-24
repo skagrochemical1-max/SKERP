@@ -801,6 +801,21 @@ async function saveOrder() {
   if (!d.client_id) { APP.showToast('Please select a client', 'error'); return; }
   if (orderItems.length === 0) { APP.showToast('Please add at least one item', 'error'); return; }
 
+  let finalOrderNo = d.order_no;
+  if (!finalOrderNo && !editingOrderId) {
+    let maxNum = 0;
+    for (let o of allOrders) {
+      if (o.order_no && o.order_no.startsWith('O-')) {
+        const numStr = o.order_no.substring(2);
+        if (/^\d+$/.test(numStr)) {
+          const num = parseInt(numStr, 10);
+          if (num < 1000000 && num > maxNum) maxNum = num;
+        }
+      }
+    }
+    finalOrderNo = 'O-' + String(maxNum + 1).padStart(2, '0');
+  }
+
   const saveBtn = document.querySelector('#order-modal button.btn-primary');
   if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving...'; }
 
@@ -852,6 +867,7 @@ async function saveOrder() {
 
       if (editingOrderId) {
         const { error: updateErr } = await window.dbClient.from('orders').update({
+          order_no: finalOrderNo || null,
           client_id: d.client_id,
           client_name: clientName,
           date: d.date || UTILS.todayStr(),
@@ -885,7 +901,7 @@ async function saveOrder() {
         }
       } else {
         const { data, error } = await window.dbClient.rpc('place_sales_order', {
-          p_order_no: d.order_no || null,
+          p_order_no: finalOrderNo || null,
           p_client_id: d.client_id,
           p_client_name: clientName,
           p_date: d.date || UTILS.todayStr(),
