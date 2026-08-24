@@ -866,41 +866,32 @@ async function saveOrder() {
       });
 
       if (editingOrderId) {
-        const { error: updateErr } = await window.dbClient.from('orders').update({
-          order_no: finalOrderNo || null,
-          client_id: d.client_id,
-          client_name: clientName,
-          date: d.date || UTILS.todayStr(),
-          due_date: d.due_date || null,
-          status: d.status || 'Pending',
-          total_amount: finalTotal,
-          paid_amount: paidAmount,
-          discount: discountPct,
-          tax: taxPct,
-          notes: d.notes || ''
-        }).eq('id', editingOrderId);
-        
-        if (updateErr) throw updateErr;
-
-        await window.dbClient.from('order_items').delete().eq('order_id', editingOrderId);
-        
-        if (orderItems.length > 0) {
-          const { error: itemsErr } = await window.dbClient.from('order_items').insert(
-            orderItems.map(it => ({
-              order_id: editingOrderId,
-              product_id: it.product_id,
-              product_name: it.product_name,
-              packaging_size: it.packaging_size || null,
-              quantity: parseFloat(it.quantity) || 0,
-              unit_price: parseFloat(it.unit_price) || 0,
-              total: parseFloat(it.total) || 0,
-              bottle_inventory_id: it.bottle_inventory_id || null
-            }))
-          );
-          if (itemsErr) throw itemsErr;
-        }
+        const { error } = await window.dbClient.rpc('update_sales_txn', {
+          p_order_id: editingOrderId,
+          p_order_no: finalOrderNo || null,
+          p_client_id: d.client_id,
+          p_client_name: clientName,
+          p_date: d.date || UTILS.todayStr(),
+          p_due_date: d.due_date || null,
+          p_status: d.status || 'Pending',
+          p_total_amount: finalTotal,
+          p_paid_amount: paidAmount,
+          p_discount: discountPct,
+          p_tax: taxPct,
+          p_notes: d.notes || '',
+          p_items: orderItems.map(it => ({
+            product_id: it.product_id,
+            product_name: it.product_name,
+            packaging_size: it.packaging_size || null,
+            quantity: parseFloat(it.quantity) || 0,
+            unit_price: parseFloat(it.unit_price) || 0,
+            total: parseFloat(it.total) || 0,
+            bottle_inventory_id: it.bottle_inventory_id || null
+          }))
+        });
+        if (error) throw error;
       } else {
-        const { data, error } = await window.dbClient.rpc('place_sales_order', {
+        const { error } = await window.dbClient.rpc('place_sales_order_v2', {
           p_order_no: finalOrderNo || null,
           p_client_id: d.client_id,
           p_client_name: clientName,
@@ -925,8 +916,6 @@ async function saveOrder() {
         if (error) {
            if (error.message && (error.message.includes('INSUFFICIENT_STOCK') || error.message.includes('Insufficient stock'))) {
              const cleanMsg = error.message.replace('INSUFFICIENT_STOCK:', '').trim();
-             // Just throwing it for now as RPC may not support backorder logic.
-             // But if we want, we could handle it. Let's match original error.
              throw new Error(cleanMsg);
            }
            throw error;
@@ -950,7 +939,7 @@ async function saveOrder() {
 async function deleteOrder(id) {
   APP.showConfirm('Delete this order and its items?', async () => {
     try {
-      const { error } = await window.dbClient.from('orders').delete().eq('id', id);
+      const { error } = await window.dbClient.rpc('delete_sales_txn', { p_order_id: id });
       if (error) throw error;
       
       APP.showToast('Order deleted!', 'success');
