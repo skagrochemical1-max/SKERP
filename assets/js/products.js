@@ -718,7 +718,6 @@ async function saveProduct() {
 
     const payload = {
       name: d.name,
-      batch_no: d.batch_no || null,
       brand: d.brand || '',
       category: d.category || '',
       composition: d.composition || '',
@@ -726,11 +725,11 @@ async function saveProduct() {
       purchase_price: productPurchasePrice,
       sell_price: productSellPrice,
       gst: defaultGst,
-      description: d.description || '',
-      // cibrc_reg_no: d.cibrc_reg_no || '',
-      // toxicity_triangle: d.toxicity_triangle || '',
-      // antidote_statement: d.antidote_statement || ''
+      description: d.description || ''
     };
+    if (d.batch_no) {
+      payload.batch_no = d.batch_no;
+    }
 
     let savedProductId = editingProductId;
 
