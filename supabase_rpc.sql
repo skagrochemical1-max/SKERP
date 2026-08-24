@@ -1,3 +1,5 @@
+NOTIFY pgrst, reload_schema;
+
 -- 20. Supabase Functions (RPC) for atomic transactions
 
 CREATE OR REPLACE FUNCTION place_sales_order(
