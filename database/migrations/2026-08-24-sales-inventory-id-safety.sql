@@ -135,7 +135,8 @@ CREATE OR REPLACE FUNCTION apply_sales_item_inventory(
   p_order_id INT,
   p_product_id INT,
   p_quantity DOUBLE PRECISION,
-  p_packaging_size VARCHAR
+  p_packaging_size VARCHAR,
+  p_bottle_inventory_id INT DEFAULT NULL
 )
 RETURNS INT AS $$
 DECLARE
@@ -158,12 +159,18 @@ BEGIN
       v_quantity := (p_quantity * (v_pack_ml / 1000.0) / v_formulation.batch_size) * v_ingredient.quantity;
       PERFORM consume_sales_inventory(p_order_id, v_ingredient.product_id, v_quantity, 'Sale (Formulation)');
     END LOOP;
+    IF p_bottle_inventory_id IS NOT NULL THEN
+      PERFORM consume_sales_inventory(p_order_id, p_bottle_inventory_id, p_quantity, 'Sale (Bottle)');
+    END IF;
     RETURN NULL;
   END IF;
 
   v_inventory_id := resolve_sales_product_inventory(p_product_id);
   v_quantity := p_quantity * (get_pack_size_ml(p_packaging_size) / 1000.0);
   PERFORM consume_sales_inventory(p_order_id, v_inventory_id, v_quantity, 'Sale (Product)');
+  IF p_bottle_inventory_id IS NOT NULL THEN
+    PERFORM consume_sales_inventory(p_order_id, p_bottle_inventory_id, p_quantity, 'Sale (Bottle)');
+  END IF;
   RETURN v_inventory_id;
 END;
 $$ LANGUAGE plpgsql;
@@ -220,14 +227,15 @@ BEGIN
 
     INSERT INTO order_items (order_id, product_id, inventory_item_id, product_name, packing_size, bottle_inventory_id, quantity, unit_price, discount, total)
     VALUES (v_order_id, v_product_id, v_inventory_id, v_item->>'product_name',
-      coalesce(v_item->>'packaging_size', v_item->>'packing_size'), NULL,
+      coalesce(v_item->>'packaging_size', v_item->>'packing_size'), NULLIF(v_item->>'bottle_inventory_id', '')::INT,
       (v_item->>'quantity')::DOUBLE PRECISION, (v_item->>'unit_price')::DECIMAL,
       coalesce((v_item->>'discount')::DECIMAL, 0), (v_item->>'total')::DECIMAL);
 
     IF v_status_affects THEN
       PERFORM apply_sales_item_inventory(v_order_id, v_product_id,
         (v_item->>'quantity')::DOUBLE PRECISION,
-        coalesce(v_item->>'packaging_size', v_item->>'packing_size'));
+        coalesce(v_item->>'packaging_size', v_item->>'packing_size'),
+        NULLIF(v_item->>'bottle_inventory_id', '')::INT);
     END IF;
   END LOOP;
   RETURN v_order_id;
@@ -265,13 +273,14 @@ BEGIN
     END IF;
     INSERT INTO order_items (order_id, product_id, inventory_item_id, product_name, packing_size, bottle_inventory_id, quantity, unit_price, discount, total)
     VALUES (p_order_id, v_product_id, v_inventory_id, v_item->>'product_name',
-      coalesce(v_item->>'packaging_size', v_item->>'packing_size'), NULL,
+      coalesce(v_item->>'packaging_size', v_item->>'packing_size'), NULLIF(v_item->>'bottle_inventory_id', '')::INT,
       (v_item->>'quantity')::DOUBLE PRECISION, (v_item->>'unit_price')::DECIMAL,
       coalesce((v_item->>'discount')::DECIMAL, 0), (v_item->>'total')::DECIMAL);
     IF v_new_affects THEN
       PERFORM apply_sales_item_inventory(p_order_id, v_product_id,
         (v_item->>'quantity')::DOUBLE PRECISION,
-        coalesce(v_item->>'packaging_size', v_item->>'packing_size'));
+        coalesce(v_item->>'packaging_size', v_item->>'packing_size'),
+        NULLIF(v_item->>'bottle_inventory_id', '')::INT);
     END IF;
   END LOOP;
 END;
@@ -302,3 +311,4 @@ END;
 $$ LANGUAGE plpgsql;
 
 NOTIFY pgrst, 'reload_schema';
+

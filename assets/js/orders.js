@@ -541,6 +541,12 @@ async function renderOrderItems() {
           <td style="min-width:140px" class="pack-size-cell">
             ${pkgSelectHtml}
           </td>
+          <td style="min-width:180px">
+            <select data-native class="form-select order-bottle-select" data-idx="${idx}" onchange="onBottleChange(${idx}, this.value)">
+              <option value="">Select Bottle</option>
+              ${cachedBottlesList.map(b => `<option value="${b.id}" ${b.id == item.bottle_inventory_id ? 'selected' : ''}>${b.item_name} (${b.quantity} avail)</option>`).join('')}
+            </select>
+          </td>
           <td><input type="number" class="form-input item-qty-input" value="${item.quantity}" onchange="onQtyChange(${idx}, this.value)"></td>
           <td><input type="number" class="form-input item-price-input" value="${item.unit_price}" onchange="onUnitPriceChange(${idx}, this.value)"></td>
           <td class="cell-amount item-total-display">${UTILS.fmtCurrency(item.total)}</td>
@@ -654,6 +660,11 @@ function onQtyChange(idx, val) {
     if (totalDisp) totalDisp.textContent = UTILS.fmtCurrency(it.total);
   }
   calculateTotal();
+}
+
+function onBottleChange(idx, val) {
+  const it = orderItems[idx];
+  it.bottle_inventory_id = val ? parseInt(val) : null;
 }
 
 function onUnitPriceChange(idx, val) {
@@ -821,6 +832,12 @@ async function saveOrder() {
           } else if (packInput && packInput.value) {
             orderItems[idx].packaging_size = packInput.value;
           }
+          const bottleSel = row.querySelector('.order-bottle-select');
+          if (bottleSel && bottleSel.value) {
+            orderItems[idx].bottle_inventory_id = parseInt(bottleSel.value);
+          } else {
+            orderItems[idx].bottle_inventory_id = null;
+          }
           const qtyInp = row.querySelector('.item-qty-input');
           if (qtyInp) orderItems[idx].quantity = parseFloat(qtyInp.value) || 0;
           const priceInp = row.querySelector('.item-price-input');
@@ -884,7 +901,7 @@ async function saveOrder() {
               unit_price: parseFloat(it.unit_price) || 0,
               total: parseFloat(it.total) || 0,
               inventory_item_id: it.inventory_item_id || null,
-              bottle_inventory_id: null
+              bottle_inventory_id: it.bottle_inventory_id || null
             };
           })
         });
@@ -914,7 +931,7 @@ async function saveOrder() {
               unit_price: parseFloat(it.unit_price) || 0,
               total: parseFloat(it.total) || 0,
               inventory_item_id: it.inventory_item_id || null,
-              bottle_inventory_id: null
+              bottle_inventory_id: it.bottle_inventory_id || null
             };
           })
         });
@@ -959,7 +976,7 @@ async function deleteOrder(id) {
 // Tab Switching Listener
 document.querySelectorAll('.tabs .tab-btn').forEach(btn => {
   btn.addEventListener('click', e => {
-    document.querySelectorAll('.table-tabs .tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tabs .tab-btn').forEach(b => b.classList.remove('active'));
     e.target.classList.add('active');
     activeOrderTab = e.target.getAttribute('data-tab');
 

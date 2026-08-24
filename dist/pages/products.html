@@ -3,18 +3,17 @@
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AgroChem ERP — Products</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" crossorigin href="/assets/style-BQLRryxR.css">
-  <link rel="stylesheet" crossorigin href="/assets/tables-BwTHrusJ.css">
-  <link rel="stylesheet" crossorigin href="/assets/responsive-C44n9ewS.css">
-  <link rel="stylesheet" crossorigin href="/assets/search-select-DHBt09kF.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link rel="manifest" href="../manifest.json">
+<link rel="manifest" href="/assets/manifest-dwnBLvH6.json">
   <meta name="theme-color" content="#10B981">
+  <link rel="stylesheet" crossorigin href="/assets/responsive-CHiigqCX.css">
+  <link rel="stylesheet" crossorigin href="/assets/tables-BwTHrusJ.css">
+  <link rel="stylesheet" crossorigin href="/assets/search-select-DHBt09kF.css">
 </head>
 <body>
 <div class="app-layout" id="app-layout">
-  <script src="../assets/js/shared-layout.js?v=57"></script>
+  <script src="../assets/js/shared-layout.js?v=58"></script>
   <script>document.addEventListener('DOMContentLoaded',()=>LAYOUT.injectLayout('Products Catalog','Products Catalog'))</script>
 
   <main class="main-content" id="main-content">
@@ -26,7 +25,7 @@
         </div>
       </div>
 
-      <div class="table-tabs">
+      <div class="tabs">
         <button class="tab-btn active" data-tab="Products">Products</button>
         <button class="tab-btn" data-tab="Packaging">Packaging</button>
       </div>
@@ -96,16 +95,23 @@
               <h4>Product Information</h4>
               <p>Core details to identify the product quickly.</p>
             </div>
-            <div class="form-grid product-form-grid">
-              <div class="form-group form-col-full" style="position:relative"><label class="form-label">Product Name <span class="required">*</span></label>
-                <input class="form-input" name="name" id="product-name-input" placeholder="Search technical stock or type a custom name" autocomplete="off">
-                <div id="product-name-suggestions" class="search-suggestions" role="listbox" aria-label="Technical inventory suggestions"></div>
+              <div class="form-grid">
+                <div class="form-group" style="position: relative;">
+                  <label class="form-label">Product Name</label>
+                  <input class="form-input" name="name" id="product-name-input" placeholder="Search technical stock or type a custom name" autocomplete="off">
+                  <div id="product-name-suggestions" class="search-suggestions" role="listbox" aria-label="Technical inventory suggestions"></div>
+                </div>
+                <div class="form-group"><label class="form-label">Category</label>
+                  <select class="form-select" name="category"><option>Insecticides</option><option>Fungicides</option><option>Herbicides</option><option>PGR</option></select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Linked Inventory Item</label>
+                  <select class="form-select" name="inventory_item_id" id="product-inventory-link">
+                    <option value="">None (Uses Formulation)</option>
+                  </select>
+                </div>
+                <div class="form-group"><label class="form-label">Brand</label><input class="form-input" name="brand" placeholder="e.g. AgroGuard"></div>
               </div>
-              <div class="form-group"><label class="form-label">Category</label>
-                <select class="form-select" name="category"><option>Insecticides</option><option>Fungicides</option><option>Herbicides</option><option>PGR</option></select>
-              </div>
-              <div class="form-group"><label class="form-label">Brand</label><input class="form-input" name="brand" placeholder="e.g. AgroGuard"></div>
-            </div>
           </section>
 
           <section class="product-form-card">
@@ -203,8 +209,8 @@
   </div>
 </div>
 
-<script src="../assets/js/database.js?v=57"></script>
-<script src="../assets/js/utils.js?v=57"></script>
-<script src="../assets/js/components/search-select.js?v=57"></script>
-<script src="../assets/js/app.js?v=57"></script><script src="../assets/js/products.js?v=57"></script>
+<script src="../assets/js/database.js?v=63"></script>
+<script src="../assets/js/utils.js?v=63"></script>
+<script src="../assets/js/components/search-select.js?v=63"></script>
+<script src="../assets/js/app.js?v=63"></script><script src="../assets/js/products.js?v=63"></script>
 </body></html>
