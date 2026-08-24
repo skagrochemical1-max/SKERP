@@ -1,6 +1,18 @@
 -- ==========================================
 -- FIX SALES ORDERS -> INVENTORY RPCs
 -- ==========================================
+
+-- 1. Add explicitly linked inventory item to products to avoid name-based deductions
+ALTER TABLE products ADD COLUMN IF NOT EXISTS inventory_item_id INT REFERENCES inventory_items(id) ON DELETE SET NULL;
+
+-- Auto-link any existing repackaged products
+UPDATE products p
+SET inventory_item_id = i.id
+FROM inventory_items i
+WHERE TRIM(LOWER(p.name)) = TRIM(LOWER(i.name))
+  AND i.category IN ('Technical', 'Others')
+  AND p.inventory_item_id IS NULL;
+
 NOTIFY pgrst, 'reload_schema';
 
 CREATE OR REPLACE FUNCTION get_pack_size_ml(p_size VARCHAR)
@@ -60,8 +72,8 @@ BEGIN
       WHERE id = v_bottle_id;
     END IF;
 
-    -- Look up the formulation for the technical restore
-    SELECT * INTO v_formulation FROM formulations WHERE LOWER(product_name) = LOWER(v_item.product_name) LIMIT 1;
+    -- 1. Try to find Formulation
+    SELECT * INTO v_formulation FROM formulations WHERE product_id = v_item.product_id LIMIT 1;
     IF FOUND AND v_formulation.batch_size > 0 THEN
       FOR v_ing IN SELECT * FROM formulation_ingredients WHERE formulation_id = v_formulation.id LOOP
         INSERT INTO stock_movements (batch_id, txn_type, txn_id, qty)
@@ -79,9 +91,9 @@ BEGIN
         WHERE id = v_ing.product_id;
       END LOOP;
     ELSE
-      -- No formulation, check if repackaged
-      SELECT id INTO v_tech_id FROM inventory_items WHERE LOWER(name) = LOWER(v_item.product_name) AND category IN ('Technical', 'Others') LIMIT 1;
-      IF FOUND THEN
+      -- 2. No formulation, check if it is explicitly linked to a Repackaged Technical item
+      SELECT inventory_item_id INTO v_tech_id FROM products WHERE id = v_item.product_id;
+      IF v_tech_id IS NOT NULL THEN
         v_tech_qty := (v_qty * (get_pack_size_ml(v_item.packing_size) / 1000.0));
         
         INSERT INTO stock_movements (batch_id, txn_type, txn_id, qty)
@@ -198,7 +210,8 @@ BEGIN
       WHERE id = v_bottle_id;
     END IF;
 
-    SELECT * INTO v_formulation FROM formulations WHERE LOWER(product_name) = LOWER(v_item->>'product_name') LIMIT 1;
+    -- 1. Try to find Formulation
+    SELECT * INTO v_formulation FROM formulations WHERE product_id = (v_item->>'product_id')::INT LIMIT 1;
     IF FOUND AND v_formulation.batch_size > 0 THEN
       FOR v_ing IN SELECT * FROM formulation_ingredients WHERE formulation_id = v_formulation.id LOOP
         INSERT INTO stock_movements (batch_id, txn_type, txn_id, qty)
@@ -216,8 +229,9 @@ BEGIN
         WHERE id = v_ing.product_id;
       END LOOP;
     ELSE
-      SELECT id INTO v_tech_id FROM inventory_items WHERE LOWER(name) = LOWER(v_item->>'product_name') AND category IN ('Technical', 'Others') LIMIT 1;
-      IF FOUND THEN
+      -- 2. No formulation, check if it is explicitly linked to a Repackaged Technical item
+      SELECT inventory_item_id INTO v_tech_id FROM products WHERE id = (v_item->>'product_id')::INT;
+      IF v_tech_id IS NOT NULL THEN
         v_tech_qty := (v_qty * (get_pack_size_ml(COALESCE(v_item->>'packing_size', v_item->>'packaging_size')) / 1000.0));
         
         INSERT INTO stock_movements (batch_id, txn_type, txn_id, qty)
@@ -307,7 +321,8 @@ BEGIN
       WHERE id = v_bottle_id;
     END IF;
 
-    SELECT * INTO v_formulation FROM formulations WHERE LOWER(product_name) = LOWER(v_item->>'product_name') LIMIT 1;
+    -- 1. Try to find Formulation
+    SELECT * INTO v_formulation FROM formulations WHERE product_id = (v_item->>'product_id')::INT LIMIT 1;
     IF FOUND AND v_formulation.batch_size > 0 THEN
       FOR v_ing IN SELECT * FROM formulation_ingredients WHERE formulation_id = v_formulation.id LOOP
         INSERT INTO stock_movements (batch_id, txn_type, txn_id, qty)
@@ -325,8 +340,9 @@ BEGIN
         WHERE id = v_ing.product_id;
       END LOOP;
     ELSE
-      SELECT id INTO v_tech_id FROM inventory_items WHERE LOWER(name) = LOWER(v_item->>'product_name') AND category IN ('Technical', 'Others') LIMIT 1;
-      IF FOUND THEN
+      -- 2. No formulation, check if it is explicitly linked to a Repackaged Technical item
+      SELECT inventory_item_id INTO v_tech_id FROM products WHERE id = (v_item->>'product_id')::INT;
+      IF v_tech_id IS NOT NULL THEN
         v_tech_qty := (v_qty * (get_pack_size_ml(COALESCE(v_item->>'packing_size', v_item->>'packaging_size')) / 1000.0));
         
         INSERT INTO stock_movements (batch_id, txn_type, txn_id, qty)

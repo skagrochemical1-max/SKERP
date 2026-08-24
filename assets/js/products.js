@@ -219,6 +219,17 @@ async function loadTechnicalInventorySuggestions() {
     if (datalist) {
       datalist.innerHTML = technicalInventoryNames.map(name => `<option value="${name}"></option>`).join('');
     }
+
+    const select = document.getElementById('product-inventory-link');
+    if (select) {
+      const techItems = (rawInventoryItems || []).filter(item => String(item.category || '').trim().toLowerCase() === 'technical');
+      let html = '<option value="">None (Uses Formulation)</option>';
+      techItems.forEach(it => {
+        html += `<option value="${it.id}">${it.name}</option>`;
+      });
+      select.innerHTML = html;
+    }
+
     // Notify any autocomplete widgets that data is ready
     try { document.dispatchEvent(new CustomEvent('technicalInventoryLoaded')); } catch (e) {}
   } catch (err) {
@@ -722,6 +733,7 @@ async function saveProduct() {
       category: d.category || '',
       composition: d.composition || '',
       unit: d.unit || 'Kg',
+      inventory_item_id: d.inventory_item_id ? parseInt(d.inventory_item_id) : null,
       purchase_price: productPurchasePrice,
       sell_price: productSellPrice,
       gst: defaultGst,
