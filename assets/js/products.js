@@ -718,7 +718,7 @@ async function saveProduct() {
 
     const payload = {
       name: d.name,
-      batch_no: d.batch_no || '',
+      batch_no: d.batch_no || null,
       brand: d.brand || '',
       category: d.category || '',
       composition: d.composition || '',
