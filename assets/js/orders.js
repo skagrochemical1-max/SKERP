@@ -544,7 +544,7 @@ async function renderOrderItems() {
           <td style="min-width:180px">
             <select data-native class="form-select order-bottle-select" data-idx="${idx}" onchange="onBottleChange(${idx}, this.value)">
               <option value="">Select Bottle</option>
-              ${cachedBottlesList.map(b => `<option value="${b.id}" ${b.id == item.bottle_inventory_id ? 'selected' : ''}>${b.item_name} (${b.quantity} avail)</option>`).join('')}
+              ${cachedBottlesList.map(b => `<option value="${b.id}" ${b.id == item.bottle_inventory_id ? 'selected' : ''}>${b.name} (${parseFloat(b.total_stock || b.stock || 0).toFixed(0)} avail)</option>`).join('')}
             </select>
           </td>
           <td><input type="number" class="form-input item-qty-input" value="${item.quantity}" onchange="onQtyChange(${idx}, this.value)"></td>
