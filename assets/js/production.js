@@ -235,7 +235,22 @@ async function saveProduction() {
     }
     
     const prodObj = cachedProducts.find(p => p.id == d.product_id);
-    const finalBatchNo = d.batch_no || ('B-' + Date.now());
+    let finalBatchNo = d.batch_no;
+    if (!finalBatchNo && !editingProductionId) {
+      let maxNum = 0;
+      for (let b of allProductions) {
+        if (b.batch_no && b.batch_no.startsWith('B-')) {
+          const numStr = b.batch_no.substring(2);
+          if (/^\d+$/.test(numStr)) {
+            const num = parseInt(numStr, 10);
+            if (num < 1000000 && num > maxNum) maxNum = num;
+          }
+        }
+      }
+      finalBatchNo = 'B-' + String(maxNum + 1).padStart(2, '0');
+    } else if (!finalBatchNo) {
+      finalBatchNo = 'B-' + Date.now();
+    }
     
     const payload = {
       product_id: parseInt(d.product_id),
