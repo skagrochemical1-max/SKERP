@@ -34,6 +34,8 @@ DECLARE
   v_qty DOUBLE PRECISION;
   v_formulation RECORD;
   v_ing RECORD;
+  v_tech_id INT;
+  v_tech_qty DOUBLE PRECISION;
 BEGIN
   -- Loop through items in this order to restore stock
   FOR v_item IN SELECT * FROM order_items WHERE order_id = p_order_id
@@ -76,6 +78,26 @@ BEGIN
         SET stock = COALESCE(stock, 0) + ((v_qty * (get_pack_size_ml(v_item.packing_size) / 1000.0) / v_formulation.batch_size) * v_ing.quantity)
         WHERE id = v_ing.product_id;
       END LOOP;
+    ELSE
+      -- No formulation, check if repackaged
+      SELECT id INTO v_tech_id FROM inventory_items WHERE LOWER(name) = LOWER(v_item.product_name) AND category IN ('Technical', 'Others') LIMIT 1;
+      IF FOUND THEN
+        v_tech_qty := (v_qty * (get_pack_size_ml(v_item.packing_size) / 1000.0));
+        
+        INSERT INTO stock_movements (batch_id, txn_type, txn_id, qty)
+        SELECT id, 'Sale Edited (Technical)', p_order_id, v_tech_qty
+        FROM stock_batches
+        WHERE item_id = v_tech_id AND item_type = 'Inventory'
+        ORDER BY id DESC LIMIT 1;
+
+        UPDATE stock_batches 
+        SET current_qty = current_qty + v_tech_qty
+        WHERE id = (SELECT id FROM stock_batches WHERE item_id = v_tech_id AND item_type = 'Inventory' ORDER BY id DESC LIMIT 1);
+
+        UPDATE inventory_items
+        SET stock = COALESCE(stock, 0) + v_tech_qty
+        WHERE id = v_tech_id;
+      END IF;
     END IF;
   END LOOP;
 END;
@@ -112,6 +134,8 @@ DECLARE
   v_qty DOUBLE PRECISION;
   v_formulation RECORD;
   v_ing RECORD;
+  v_tech_id INT;
+  v_tech_qty DOUBLE PRECISION;
 BEGIN
   -- Revert old stock
   PERFORM revert_sales_stock(p_order_id);
@@ -191,6 +215,25 @@ BEGIN
         SET stock = COALESCE(stock, 0) - ((v_qty * (get_pack_size_ml(COALESCE(v_item->>'packing_size', v_item->>'packaging_size')) / 1000.0) / v_formulation.batch_size) * v_ing.quantity)
         WHERE id = v_ing.product_id;
       END LOOP;
+    ELSE
+      SELECT id INTO v_tech_id FROM inventory_items WHERE LOWER(name) = LOWER(v_item->>'product_name') AND category IN ('Technical', 'Others') LIMIT 1;
+      IF FOUND THEN
+        v_tech_qty := (v_qty * (get_pack_size_ml(COALESCE(v_item->>'packing_size', v_item->>'packaging_size')) / 1000.0));
+        
+        INSERT INTO stock_movements (batch_id, txn_type, txn_id, qty)
+        SELECT id, 'Sale (Technical)', p_order_id, -v_tech_qty
+        FROM stock_batches
+        WHERE item_id = v_tech_id AND item_type = 'Inventory'
+        ORDER BY id ASC LIMIT 1;
+
+        UPDATE stock_batches 
+        SET current_qty = current_qty - v_tech_qty
+        WHERE id = (SELECT id FROM stock_batches WHERE item_id = v_tech_id AND item_type = 'Inventory' ORDER BY id ASC LIMIT 1);
+
+        UPDATE inventory_items
+        SET stock = COALESCE(stock, 0) - v_tech_qty
+        WHERE id = v_tech_id;
+      END IF;
     END IF;
   END LOOP;
 END;
@@ -218,6 +261,8 @@ DECLARE
   v_qty DOUBLE PRECISION;
   v_formulation RECORD;
   v_ing RECORD;
+  v_tech_id INT;
+  v_tech_qty DOUBLE PRECISION;
 BEGIN
   INSERT INTO orders (order_no, client_id, client_name, date, due_date, status, total_amount, paid_amount, discount, tax, notes)
   VALUES (p_order_no, p_client_id, p_client_name, p_date, p_due_date, p_status, p_total_amount, p_paid_amount, p_discount, p_tax, p_notes)
@@ -279,6 +324,25 @@ BEGIN
         SET stock = COALESCE(stock, 0) - ((v_qty * (get_pack_size_ml(COALESCE(v_item->>'packing_size', v_item->>'packaging_size')) / 1000.0) / v_formulation.batch_size) * v_ing.quantity)
         WHERE id = v_ing.product_id;
       END LOOP;
+    ELSE
+      SELECT id INTO v_tech_id FROM inventory_items WHERE LOWER(name) = LOWER(v_item->>'product_name') AND category IN ('Technical', 'Others') LIMIT 1;
+      IF FOUND THEN
+        v_tech_qty := (v_qty * (get_pack_size_ml(COALESCE(v_item->>'packing_size', v_item->>'packaging_size')) / 1000.0));
+        
+        INSERT INTO stock_movements (batch_id, txn_type, txn_id, qty)
+        SELECT id, 'Sale (Technical)', v_order_id, -v_tech_qty
+        FROM stock_batches
+        WHERE item_id = v_tech_id AND item_type = 'Inventory'
+        ORDER BY id ASC LIMIT 1;
+
+        UPDATE stock_batches 
+        SET current_qty = current_qty - v_tech_qty
+        WHERE id = (SELECT id FROM stock_batches WHERE item_id = v_tech_id AND item_type = 'Inventory' ORDER BY id ASC LIMIT 1);
+
+        UPDATE inventory_items
+        SET stock = COALESCE(stock, 0) - v_tech_qty
+        WHERE id = v_tech_id;
+      END IF;
     END IF;
   END LOOP;
 
