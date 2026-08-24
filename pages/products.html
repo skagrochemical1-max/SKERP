@@ -94,23 +94,16 @@
               <h4>Product Information</h4>
               <p>Core details to identify the product quickly.</p>
             </div>
-              <div class="form-grid">
-                <div class="form-group" style="position: relative;">
-                  <label class="form-label">Product Name</label>
-                  <input class="form-input" name="name" id="product-name-input" placeholder="Search technical stock or type a custom name" autocomplete="off">
-                  <div id="product-name-suggestions" class="search-suggestions" role="listbox" aria-label="Technical inventory suggestions"></div>
-                </div>
-                <div class="form-group"><label class="form-label">Category</label>
-                  <select class="form-select" name="category"><option>Insecticides</option><option>Fungicides</option><option>Herbicides</option><option>PGR</option></select>
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Linked Inventory Item</label>
-                  <select class="form-select" name="inventory_item_id" id="product-inventory-link">
-                    <option value="">None (Uses Formulation)</option>
-                  </select>
-                </div>
-                <div class="form-group"><label class="form-label">Brand</label><input class="form-input" name="brand" placeholder="e.g. AgroGuard"></div>
+            <div class="form-grid product-form-grid">
+              <div class="form-group form-col-full" style="position:relative"><label class="form-label">Product Name <span class="required">*</span></label>
+                <input class="form-input" name="name" id="product-name-input" placeholder="Search technical stock or type a custom name" autocomplete="off">
+                <div id="product-name-suggestions" class="search-suggestions" role="listbox" aria-label="Technical inventory suggestions"></div>
               </div>
+              <div class="form-group"><label class="form-label">Category</label>
+                <select class="form-select" name="category"><option>Insecticides</option><option>Fungicides</option><option>Herbicides</option><option>PGR</option></select>
+              </div>
+              <div class="form-group"><label class="form-label">Brand</label><input class="form-input" name="brand" placeholder="e.g. AgroGuard"></div>
+            </div>
           </section>
 
           <section class="product-form-card">
@@ -208,8 +201,8 @@
   </div>
 </div>
 
-<script src="../assets/js/database.js?v=63"></script>
-<script src="../assets/js/utils.js?v=63"></script>
-<script src="../assets/js/components/search-select.js?v=63"></script>
-<script src="../assets/js/app.js?v=63"></script><script src="../assets/js/products.js?v=63"></script>
+<script src="../assets/js/database.js?v=58"></script>
+<script src="../assets/js/utils.js?v=58"></script>
+<script src="../assets/js/components/search-select.js?v=58"></script>
+<script src="../assets/js/app.js?v=58"></script><script src="../assets/js/products.js?v=58"></script>
 </body></html>

@@ -113,23 +113,17 @@ CREATE OR REPLACE FUNCTION resolve_sales_product_inventory(p_product_id INT)
 RETURNS INT AS $$
 DECLARE
   v_inventory_id INT;
-  v_product_name VARCHAR;
 BEGIN
-  SELECT name, inventory_item_id INTO v_product_name, v_inventory_id
-  FROM products WHERE id = p_product_id;
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'Sales product % does not exist', p_product_id;
-  END IF;
-  IF v_inventory_id IS NULL THEN
-    RAISE EXCEPTION 'Inventory mapping not found for % (product ID %)', v_product_name, p_product_id;
-  END IF;
-  PERFORM 1 FROM inventory_items WHERE id = v_inventory_id;
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'Inventory mapping % for % does not exist', v_inventory_id, v_product_name;
-  END IF;
+  SELECT i.id INTO v_inventory_id
+  FROM inventory_items i
+  JOIN products p ON lower(trim(i.name)) = lower(trim(p.name))
+  WHERE p.id = p_product_id 
+    AND i.category IN ('Technical', 'Others') 
+  LIMIT 1;
+
   RETURN v_inventory_id;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION apply_sales_item_inventory(
   p_order_id INT,
