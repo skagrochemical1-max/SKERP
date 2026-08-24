@@ -4,7 +4,7 @@
 NOTIFY pgrst, 'reload_schema';
 
 CREATE OR REPLACE FUNCTION revert_sales_stock(p_order_id INT)
-RETURNS VOID AS 
+RETURNS VOID AS $$ 
 DECLARE
   v_item RECORD;
   v_bottle_id INT;
@@ -56,15 +56,17 @@ BEGIN
     END IF;
   END LOOP;
 END;
- LANGUAGE plpgsql;
+
+$$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION delete_sales_txn(p_order_id INT)
-RETURNS VOID AS 
+RETURNS VOID AS $$ 
 BEGIN
   PERFORM revert_sales_stock(p_order_id);
   DELETE FROM orders WHERE id = p_order_id;
 END;
- LANGUAGE plpgsql;
+
+$$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION update_sales_txn(
   p_order_id INT,
@@ -80,7 +82,7 @@ CREATE OR REPLACE FUNCTION update_sales_txn(
   p_tax DECIMAL,
   p_notes TEXT,
   p_items JSONB
-) RETURNS VOID AS 
+) RETURNS VOID AS $$ 
 DECLARE
   v_item JSONB;
   v_bottle_id INT;
@@ -169,7 +171,8 @@ BEGIN
     END IF;
   END LOOP;
 END;
- LANGUAGE plpgsql;
+
+$$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION place_sales_order_v2(
   p_order_no VARCHAR,
@@ -184,7 +187,7 @@ CREATE OR REPLACE FUNCTION place_sales_order_v2(
   p_tax DECIMAL,
   p_notes TEXT,
   p_items JSONB
-) RETURNS INT AS 
+) RETURNS INT AS $$ 
 DECLARE
   v_order_id INT;
   v_item JSONB;
@@ -258,5 +261,6 @@ BEGIN
 
   RETURN v_order_id;
 END;
- LANGUAGE plpgsql;
+
+$$ LANGUAGE plpgsql;
 
