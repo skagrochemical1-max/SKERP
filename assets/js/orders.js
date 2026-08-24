@@ -22,7 +22,7 @@ async function fetchPackagingData() {
     if (!pkgErr && pkgData) {
       allPackagingData = pkgData;
     }
-    const { data: invData, error: invErr } = await window.dbClient.from('inventory').select('*');
+    const { data: invData, error: invErr } = await window.dbClient.from('inventory_items').select('*');
     if (!invErr && invData) {
       cachedBottlesList = invData.filter(it => it.category === 'Bottles');
     }
