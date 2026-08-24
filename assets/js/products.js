@@ -222,10 +222,9 @@ async function loadTechnicalInventorySuggestions() {
 
     const select = document.getElementById('product-inventory-link');
     if (select) {
-      const techItems = (rawInventoryItems || []).filter(item => String(item.category || '').trim().toLowerCase() === 'technical');
       let html = '<option value="">None (Uses Formulation)</option>';
-      techItems.forEach(it => {
-        html += `<option value="${it.id}">${it.name}</option>`;
+      (rawInventoryItems || []).forEach(it => {
+        html += `<option value="${it.id}">${it.name} (${it.category || 'Other'}, ${it.unit || 'Nos'})</option>`;
       });
       select.innerHTML = html;
     }

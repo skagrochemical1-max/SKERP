@@ -370,7 +370,7 @@ async function openAdd() {
   const gstSel = document.getElementById('gst-type-select');
   if (gstSel) { gstSel.value = ''; onGstTypeChange(''); }
   handleAutoDiscount();
-  orderItems = [{ id: Date.now(), product_id: '', product_name: '', quantity: 1, unit_price: 0, total: 0, bottle_inventory_id: '' }];
+  orderItems = [{ id: Date.now(), product_id: '', product_name: '', quantity: 1, unit_price: 0, total: 0 }];
   await populateClientSelect();
   await renderOrderItems();
   UTILS.applyDefaultDateInputs(orderForm, { skipFieldNames: ['due_date'] });
@@ -441,7 +441,7 @@ async function openEdit(id) {
 }
 
 async function addOrderItem() {
-  orderItems.push({ id: Date.now(), product_id: '', product_name: '', quantity: 1, unit_price: 0, total: 0, bottle_inventory_id: '' });
+  orderItems.push({ id: Date.now(), product_id: '', product_name: '', quantity: 1, unit_price: 0, total: 0 });
   await renderOrderItems();
 }
 
@@ -530,28 +530,6 @@ async function renderOrderItems() {
         pkgSelectHtml = `<input type="text" class="form-input order-pack-input" data-idx="${idx}" value="${fallbackSize}" placeholder="Pack size" onchange="onPackSizeChange(${idx}, this.value)">`;
       }
 
-      // Filter bottles by matching packaging size or show all if empty
-      let validBottles = cachedBottlesList;
-      if (item.packaging_size) {
-        const itemNormPack = String(item.packaging_size).toLowerCase().replace(/\s+/g, '');
-        // We match bottle size if item_size exists, else fall back to matching name
-        validBottles = cachedBottlesList.filter(b => {
-          if (b.item_size) {
-            const bNormSize = String(b.item_size).toLowerCase().replace(/\s+/g, '');
-            return bNormSize === itemNormPack || itemNormPack.includes(bNormSize) || bNormSize.includes(itemNormPack);
-          }
-          return b.name.toLowerCase().replace(/\s+/g, '').includes(itemNormPack);
-        });
-        if (validBottles.length === 0) validBottles = cachedBottlesList; // fallback to all
-      }
-
-      const bottleSelectHtml = `
-        <select data-native class="form-select order-bottle-select" data-idx="${idx}" onchange="onBottleChange(${idx}, this.value)">
-          <option value="">Select Bottle</option>
-          ${validBottles.map(b => `<option value="${b.id}" ${b.id == item.bottle_inventory_id ? 'selected' : ''}>${b.name} (${parseFloat(b.total_stock || b.stock || 0).toFixed(0)} avail)</option>`).join('')}
-        </select>
-      `;
-
       return `
         <tr data-row-idx="${idx}">
           <td style="min-width:180px">
@@ -562,9 +540,6 @@ async function renderOrderItems() {
           </td>
           <td style="min-width:140px" class="pack-size-cell">
             ${pkgSelectHtml}
-          </td>
-          <td style="min-width:160px" class="bottle-cell">
-            ${bottleSelectHtml}
           </td>
           <td><input type="number" class="form-input item-qty-input" value="${item.quantity}" onchange="onQtyChange(${idx}, this.value)"></td>
           <td><input type="number" class="form-input item-price-input" value="${item.unit_price}" onchange="onUnitPriceChange(${idx}, this.value)"></td>
@@ -602,6 +577,7 @@ async function onProductSelectChange(idx, valOrEvt) {
   console.log(`[OrderRow ${idx}] Fetched product object from Product Master:`, p);
   
   it.product_name = p?.name || '';
+  it.inventory_item_id = p?.inventory_item_id || null;
   let pkgOptions = p?.packaging_options || [];
   if (!pkgOptions.length && val) {
     try {
@@ -626,7 +602,6 @@ async function onProductSelectChange(idx, valOrEvt) {
     it.unit_price = parseFloat(p?.sell_price) || 0;
   }
   it.total = (parseFloat(it.quantity) || 0) * (parseFloat(it.unit_price) || 0);
-  it.bottle_inventory_id = ''; // Reset bottle selection
   await renderOrderItems();
 }
 
@@ -666,7 +641,6 @@ async function onPackSizeChange(idx, val) {
     }
   }
   it.total = (parseFloat(it.quantity) || 0) * (parseFloat(it.unit_price) || 0);
-  it.bottle_inventory_id = ''; // Reset bottle selection
   await renderOrderItems();
 }
 
@@ -692,13 +666,6 @@ function onUnitPriceChange(idx, val) {
     if (totalDisp) totalDisp.textContent = UTILS.fmtCurrency(it.total);
   }
   calculateTotal();
-}
-
-function onBottleChange(idx, val) {
-  const it = orderItems[idx];
-  if (it) {
-    it.bottle_inventory_id = val;
-  }
 }
 
 function removeItem(idx) {
@@ -860,10 +827,36 @@ async function saveOrder() {
           if (priceInp) orderItems[idx].unit_price = parseFloat(priceInp.value) || 0;
           orderItems[idx].total = (parseFloat(orderItems[idx].quantity) || 0) * (parseFloat(orderItems[idx].unit_price) || 0);
 
-          const bottleSel = row.querySelector('.order-bottle-select');
-          if (bottleSel) orderItems[idx].bottle_inventory_id = bottleSel.value;
         }
       });
+
+      const { data: formulationRows, error: formulationError } = await window.dbClient
+        .from('formulations').select('product_id').in('product_id', orderItems.map(item => item.product_id).filter(Boolean));
+      if (formulationError) throw formulationError;
+      const formulationProductIds = new Set((formulationRows || []).map(row => String(row.product_id)));
+      const unmappedProduct = orderItems.find(item => {
+        const product = cachedProductsList.find(p => p.id == item.product_id);
+        const hasFormulation = product && formulationProductIds.has(String(product.id));
+        return !item.product_id || !product || (!product.inventory_item_id && !hasFormulation);
+      });
+      if (unmappedProduct) {
+        const product = cachedProductsList.find(p => p.id == unmappedProduct.product_id);
+        throw new Error(`Inventory mapping not found for ${product?.name || 'selected product'}. Set Linked Inventory Item in Products.`);
+      }
+
+      console.groupCollapsed(`[Sales Order ${finalOrderNo || 'new'}] inventory resolution`);
+      orderItems.forEach(item => {
+        const product = cachedProductsList.find(p => p.id == item.product_id);
+        console.log('ORDER PRODUCT', {
+          name: item.product_name,
+          productId: item.product_id,
+          inventoryId: product?.inventory_item_id || null,
+          quantity: item.quantity,
+          unit: product?.unit || null,
+          packSize: item.packaging_size
+        });
+      });
+      console.groupEnd();
 
       if (editingOrderId) {
         const { error } = await window.dbClient.rpc('update_sales_txn', {
@@ -890,7 +883,8 @@ async function saveOrder() {
               base_volume: volumeLiters * (parseFloat(it.quantity) || 0),
               unit_price: parseFloat(it.unit_price) || 0,
               total: parseFloat(it.total) || 0,
-              bottle_inventory_id: it.bottle_inventory_id || null
+              inventory_item_id: it.inventory_item_id || null,
+              bottle_inventory_id: null
             };
           })
         });
@@ -919,7 +913,8 @@ async function saveOrder() {
               base_volume: volumeLiters * (parseFloat(it.quantity) || 0),
               unit_price: parseFloat(it.unit_price) || 0,
               total: parseFloat(it.total) || 0,
-              bottle_inventory_id: it.bottle_inventory_id || null
+              inventory_item_id: it.inventory_item_id || null,
+              bottle_inventory_id: null
             };
           })
         });
@@ -962,7 +957,7 @@ async function deleteOrder(id) {
 }
 
 // Tab Switching Listener
-document.querySelectorAll('.table-tabs .tab-btn').forEach(btn => {
+document.querySelectorAll('.tabs .tab-btn').forEach(btn => {
   btn.addEventListener('click', e => {
     document.querySelectorAll('.table-tabs .tab-btn').forEach(b => b.classList.remove('active'));
     e.target.classList.add('active');

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'agrochem-erp-v1';
+const CACHE_NAME = 'agrochem-erp-v2';
 const urlsToCache = [
   '/SKERP/',
   '/SKERP/login.html',
