@@ -1,7 +1,7 @@
 -- ==========================================
 -- FIX PURCHASE ORDERS -> INVENTORY RPCs
 -- ==========================================
-NOTIFY pgrst, reload_schema;
+NOTIFY pgrst, 'reload_schema';
 
 
 -- Ensure unique constraint on purchase_no

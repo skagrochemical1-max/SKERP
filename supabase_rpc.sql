@@ -1,4 +1,4 @@
-NOTIFY pgrst, reload_schema;
+NOTIFY pgrst, 'reload_schema';
 
 -- 20. Supabase Functions (RPC) for atomic transactions
 
