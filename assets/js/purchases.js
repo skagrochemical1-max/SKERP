@@ -71,8 +71,8 @@ async function refreshPurchasableItems() {
     const i = iErr ? [] : iData || [];
     
     const combined = [
-      ...p.map(x => ({ id: x.id, name: x.name, unit: x.unit || 'Nos', type: 'Catalog', item_size: x.item_size || x.packaging })),
-      ...i.map(x => ({ id: x.id, name: x.name, unit: x.unit || 'Nos', type: 'Inventory', item_size: x.item_size }))
+      ...i.map(x => ({ id: x.id, name: x.name, unit: x.unit || 'Nos', type: 'Inventory', item_size: x.item_size })),
+      ...p.map(x => ({ id: x.id, name: x.name, unit: x.unit || 'Nos', type: 'Catalog', item_size: x.item_size || x.packaging }))
     ];
     
     const map = new Map();

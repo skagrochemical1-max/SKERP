@@ -1,6 +1,8 @@
 -- ==========================================
 -- FIX PURCHASE ORDERS -> INVENTORY RPCs
 -- ==========================================
+NOTIFY pgrst, reload_schema;
+
 
 -- Ensure unique constraint on purchase_no
 ALTER TABLE purchases DROP CONSTRAINT IF EXISTS purchases_purchase_no_key;
@@ -73,7 +75,7 @@ BEGIN
       VALUES (
         (v_item->>'item_id')::INT,
         v_item->>'item_name',
-        'Inventory',
+        COALESCE(v_item->>'item_type', 'Inventory'),
         v_batch_no,
         v_purchase_id,
         p_supplier_id,
@@ -188,7 +190,7 @@ BEGIN
       VALUES (
         (v_item->>'item_id')::INT,
         v_item->>'item_name',
-        'Inventory',
+        COALESCE(v_item->>'item_type', 'Inventory'),
         v_batch_no,
         p_purchase_id,
         p_supplier_id,
