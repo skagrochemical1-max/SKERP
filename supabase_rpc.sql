@@ -62,6 +62,11 @@ BEGIN
       UPDATE stock_batches 
       SET current_qty = current_qty - v_qty
       WHERE id = (SELECT id FROM stock_batches WHERE item_id = v_bottle_id AND item_type = 'Inventory' ORDER BY id ASC LIMIT 1);
+      
+      -- Update overall inventory stock
+      UPDATE inventory_items
+      SET stock = COALESCE(stock, 0) - v_qty
+      WHERE id = v_bottle_id;
     END IF;
 
     -- Look up the formulation for the technical deduction (finished good product_id)
@@ -84,6 +89,11 @@ BEGIN
         UPDATE stock_batches
         SET current_qty = current_qty - (v_qty * v_ing.quantity)
         WHERE id = (SELECT id FROM stock_batches WHERE item_id = v_ing.product_id AND item_type = 'Inventory' ORDER BY id ASC LIMIT 1);
+        
+        -- Update overall inventory stock
+        UPDATE inventory_items
+        SET stock = COALESCE(stock, 0) - (v_qty * v_ing.quantity)
+        WHERE id = v_ing.product_id;
       END LOOP;
     END IF;
   END LOOP;
