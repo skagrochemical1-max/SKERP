@@ -26,16 +26,7 @@ async function loadPurchases() {
     if (pErr) throw pErr;
     allPurchases = pData || [];
 
-    // Auto-fix any null purchase_no
-    let needsRefresh = false;
-    for (let p of allPurchases) {
-      if (!p.purchase_no) {
-        const newNo = 'PO-' + Date.now().toString().slice(-6) + Math.floor(Math.random() * 100);
-        p.purchase_no = newNo;
-        await window.dbClient.from('purchases').update({ purchase_no: newNo }).eq('id', p.id);
-        needsRefresh = true;
-      }
-    }
+    // Removed random auto-fix for purchase_no
     
     // Retrieve supplier list to map display names
     const { data: supData } = await window.dbClient.from('suppliers').select('*');
@@ -76,12 +67,12 @@ async function refreshPurchasableItems() {
   try {
     const { data: pData, error: pErr } = await window.dbClient.from('products').select('*');
     const p = pErr ? [] : pData || [];
-    const { data: iData, error: iErr } = await window.dbClient.from('inventory').select('*');
+    const { data: iData, error: iErr } = await window.dbClient.from('inventory_items').select('*');
     const i = iErr ? [] : iData || [];
     
     const combined = [
-      ...p.map(x => ({ id: x.id, name: x.name, unit: x.unit || 'Nos', type: 'Catalog' })),
-      ...i.map(x => ({ id: x.id, name: x.name, unit: x.unit || 'Nos', type: 'Inventory' }))
+      ...p.map(x => ({ id: x.id, name: x.name, unit: x.unit || 'Nos', type: 'Catalog', item_size: x.item_size || x.packaging })),
+      ...i.map(x => ({ id: x.id, name: x.name, unit: x.unit || 'Nos', type: 'Inventory', item_size: x.item_size }))
     ];
     
     const map = new Map();
@@ -89,7 +80,7 @@ async function refreshPurchasableItems() {
       if (!x.name) return;
       const key = x.name.trim().toLowerCase();
       if (!map.has(key)) {
-        map.set(key, { id: x.id, name: x.name.trim(), unit: x.unit || 'Nos', type: x.type });
+        map.set(key, { id: x.id, name: x.name.trim(), unit: x.unit || 'Nos', type: x.type, item_size: x.item_size });
       }
     });
 
@@ -375,104 +366,68 @@ async function savePurchase() {
   const total = purchaseItems.reduce((s, it) => s + it.total, 0);
   
   try {
-    const purchasePayload = {
-      invoice_no: d.invoice_no || '',
-      supplier_id: d.supplier_id,
-      supplier_name: supplierName,
-      date: d.date || UTILS.todayStr(),
-      due_date: d.due_date || null,
-      status: d.status || 'Pending',
-      total_amount: total,
-      paid_amount: parseFloat(d.paid_amount) || 0.00,
-      notes: d.notes || ''
+    const rpcPayload = {
+      p_invoice_no: d.invoice_no || '',
+      p_supplier_id: d.supplier_id,
+      p_supplier_name: supplierName,
+      p_date: d.date || UTILS.todayStr(),
+      p_due_date: d.due_date || null,
+      p_status: d.status || 'Pending',
+      p_total_amount: total,
+      p_paid_amount: parseFloat(d.paid_amount) || 0.00,
+      p_notes: d.notes || ''
     };
 
-    let pId = editingPurchaseId;
-
-    if (editingPurchaseId) {
-      // 1. Check old status to see if we need to reverse stock
-      const { data: oldPurchase } = await window.dbClient.from('purchases').select('status').eq('id', editingPurchaseId).single();
-      const wasDelivered = oldPurchase && oldPurchase.status === 'Delivered';
-
-      // 2. Reverse stock & delete old stock_batches if it was delivered
-      if (wasDelivered) {
-        const { data: oldItems } = await window.dbClient.from('purchase_items').select('*').eq('purchase_id', editingPurchaseId);
-        if (oldItems) {
-          for (const oi of oldItems) {
-            const { data: inv } = await window.dbClient.from('inventory_items').select('stock').eq('id', oi.item_id).single();
-            if (inv) {
-              const newStock = parseFloat(inv.stock || 0) - parseFloat(oi.quantity || 0);
-              await window.dbClient.from('inventory_items').update({ stock: newStock }).eq('id', oi.item_id);
+    // Prepare line items with base quantity conversion
+    const itemsPayload = purchaseItems.map(it => {
+      let baseQty = parseFloat(it.quantity) || 0;
+      let unit = 'Nos';
+      
+      const match = purchasableItems.find(m => m.id === it.item_id && m.type === it.item_type);
+      if (match) {
+        unit = match.unit;
+        if (match.item_size) {
+          const packSizeMl = UTILS.parsePackSizeInMl(match.item_size);
+          if (packSizeMl > 0) {
+            const baseUnit = UTILS.normalizeUnit(unit);
+            if (baseUnit === 'Litre' || baseUnit === 'Kg') {
+              baseQty = (packSizeMl / 1000) * baseQty;
+            } else if (baseUnit === 'Ml' || baseUnit === 'Gram') {
+              baseQty = packSizeMl * baseQty;
             }
           }
         }
-        await window.dbClient.from('stock_batches').delete().eq('purchase_id', editingPurchaseId);
       }
 
-      // 3. Delete old purchase items
-      await window.dbClient.from('purchase_items').delete().eq('purchase_id', editingPurchaseId);
+      return {
+        item_id: it.item_id || null,
+        item_name: it.item_name,
+        item_type: it.item_type || 'Inventory',
+        quantity: parseFloat(it.quantity) || 0,
+        base_quantity: baseQty,
+        unit_price: parseFloat(it.unit_price) || 0,
+        batch_no: it.batch_no || '',
+        expiry_date: it.expiry_date || null,
+        total: parseFloat(it.total) || 0,
+        unit: unit
+      };
+    });
 
-      // 4. Update purchase record
-      const { error } = await window.dbClient.from('purchases').update(purchasePayload).eq('id', editingPurchaseId);
+    rpcPayload.p_items = itemsPayload;
+
+    if (editingPurchaseId) {
+      rpcPayload.p_purchase_id = editingPurchaseId;
+      const { data, error } = await window.dbClient.rpc('update_purchase_txn', rpcPayload);
       if (error) throw error;
-      
+      if (data && !data.success) throw new Error(data.error || 'Failed to update purchase');
+      APP.showToast('Purchase updated and inventory synced!', 'success');
     } else {
-      // Create NEW purchase
-      purchasePayload.purchase_no = 'PO-' + Date.now().toString().slice(-6);
-      const { data, error } = await window.dbClient.from('purchases').insert([purchasePayload]).select();
+      const { data, error } = await window.dbClient.rpc('create_purchase_txn', rpcPayload);
       if (error) throw error;
-      pId = data[0].id;
+      if (data && !data.success) throw new Error(data.error || 'Failed to create purchase');
+      APP.showToast(`Purchase ${data.purchase_no} created and inventory synced!`, 'success');
     }
 
-    // Prepare line items
-    const newItems = purchaseItems.map(it => ({
-      purchase_id: pId,
-      item_id: it.item_id || null,
-      item_name: it.item_name,
-      item_type: it.item_type || 'Inventory',
-      quantity: parseFloat(it.quantity) || 0,
-      unit_price: parseFloat(it.unit_price) || 0,
-      batch_no: it.batch_no || '',
-      expiry_date: it.expiry_date || null,
-      total: parseFloat(it.total) || 0
-    }));
-
-    // Insert line items
-    if (newItems.length > 0) {
-      const { error: piError } = await window.dbClient.from('purchase_items').insert(newItems);
-      if (piError) throw piError;
-    }
-
-    // Apply new stock if Delivered
-    if (purchasePayload.status === 'Delivered' && newItems.length > 0) {
-      const stockBatches = [];
-      for (const ni of newItems) {
-        const { data: inv } = await window.dbClient.from('inventory_items').select('stock').eq('id', ni.item_id).single();
-        if (inv) {
-          const newStock = parseFloat(inv.stock || 0) + parseFloat(ni.quantity || 0);
-          await window.dbClient.from('inventory_items').update({ stock: newStock }).eq('id', ni.item_id);
-        }
-        
-        stockBatches.push({
-          item_id: ni.item_id,
-          item_name: ni.item_name,
-          item_type: 'Inventory',
-          batch_no: ni.batch_no || ('PUR-' + Date.now() + '-' + Math.floor(Math.random()*1000)),
-          purchase_id: pId,
-          supplier_id: purchasePayload.supplier_id,
-          purchase_price: ni.unit_price,
-          initial_qty: ni.quantity,
-          current_qty: ni.quantity,
-          expiry_date: ni.expiry_date || null,
-          unit: ni.unit
-        });
-      }
-      if (stockBatches.length > 0) {
-        await window.dbClient.from('stock_batches').insert(stockBatches);
-      }
-    }
-
-    APP.showToast(editingPurchaseId ? 'Purchase updated and inventory synced!' : 'Purchase added and inventory synced!', 'success');
     APP.closeModal('purchase-modal');
     setTimeout(() => loadPurchases(), 100);
   } catch (err) {
@@ -484,27 +439,9 @@ async function savePurchase() {
 async function deletePurchase(id) {
   APP.showConfirm('Delete this purchase and all its line items?', async () => {
     try {
-      // 1. Check if it was Delivered to reverse stock
-      const { data: oldPurchase } = await window.dbClient.from('purchases').select('status').eq('id', id).single();
-      const wasDelivered = oldPurchase && oldPurchase.status === 'Delivered';
-
-      if (wasDelivered) {
-        const { data: oldItems } = await window.dbClient.from('purchase_items').select('*').eq('purchase_id', id);
-        if (oldItems) {
-          for (const oi of oldItems) {
-            const { data: inv } = await window.dbClient.from('inventory_items').select('stock').eq('id', oi.item_id).single();
-            if (inv) {
-              const newStock = parseFloat(inv.stock || 0) - parseFloat(oi.quantity || 0);
-              await window.dbClient.from('inventory_items').update({ stock: newStock }).eq('id', oi.item_id);
-            }
-          }
-        }
-        await window.dbClient.from('stock_batches').delete().eq('purchase_id', id);
-      }
-
-      // 2. Delete the purchase (purchase_items cascades)
-      const { error } = await window.dbClient.from('purchases').delete().eq('id', id);
+      const { data, error } = await window.dbClient.rpc('delete_purchase_txn', { p_purchase_id: id });
       if (error) throw new Error(error.message || 'Failed to delete purchase');
+      if (data && !data.success) throw new Error(data.error || 'Failed to delete purchase');
       
       APP.showToast('Purchase deleted and inventory restored!', 'success');
       setTimeout(() => loadPurchases(), 100);
