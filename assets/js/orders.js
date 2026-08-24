@@ -879,15 +879,20 @@ async function saveOrder() {
           p_discount: discountPct,
           p_tax: taxPct,
           p_notes: d.notes || '',
-          p_items: orderItems.map(it => ({
-            product_id: it.product_id,
-            product_name: it.product_name,
-            packaging_size: it.packaging_size || null,
-            quantity: parseFloat(it.quantity) || 0,
-            unit_price: parseFloat(it.unit_price) || 0,
-            total: parseFloat(it.total) || 0,
-            bottle_inventory_id: it.bottle_inventory_id || null
-          }))
+          p_items: orderItems.map(it => {
+            const packSizeMl = UTILS.parsePackSizeInMl(it.packaging_size) || 1000;
+            const volumeLiters = packSizeMl / 1000;
+            return {
+              product_id: it.product_id,
+              product_name: it.product_name,
+              packaging_size: it.packaging_size || null,
+              quantity: parseFloat(it.quantity) || 0,
+              base_volume: volumeLiters * (parseFloat(it.quantity) || 0),
+              unit_price: parseFloat(it.unit_price) || 0,
+              total: parseFloat(it.total) || 0,
+              bottle_inventory_id: it.bottle_inventory_id || null
+            };
+          })
         });
         if (error) throw error;
       } else {
@@ -903,15 +908,20 @@ async function saveOrder() {
           p_discount: discountPct,
           p_tax: taxPct,
           p_notes: d.notes || '',
-          p_items: orderItems.map(it => ({
-            product_id: it.product_id,
-            product_name: it.product_name,
-            packaging_size: it.packaging_size || null,
-            quantity: parseFloat(it.quantity) || 0,
-            unit_price: parseFloat(it.unit_price) || 0,
-            total: parseFloat(it.total) || 0,
-            bottle_inventory_id: it.bottle_inventory_id || null
-          }))
+          p_items: orderItems.map(it => {
+            const packSizeMl = UTILS.parsePackSizeInMl(it.packaging_size) || 1000;
+            const volumeLiters = packSizeMl / 1000;
+            return {
+              product_id: it.product_id,
+              product_name: it.product_name,
+              packaging_size: it.packaging_size || null,
+              quantity: parseFloat(it.quantity) || 0,
+              base_volume: volumeLiters * (parseFloat(it.quantity) || 0),
+              unit_price: parseFloat(it.unit_price) || 0,
+              total: parseFloat(it.total) || 0,
+              bottle_inventory_id: it.bottle_inventory_id || null
+            };
+          })
         });
         if (error) {
            if (error.message && (error.message.includes('INSUFFICIENT_STOCK') || error.message.includes('Insufficient stock'))) {

@@ -3,6 +3,29 @@
 -- ==========================================
 NOTIFY pgrst, 'reload_schema';
 
+CREATE OR REPLACE FUNCTION get_pack_size_ml(p_size VARCHAR)
+RETURNS DOUBLE PRECISION AS $$
+DECLARE
+  v_num DOUBLE PRECISION;
+  v_unit VARCHAR;
+BEGIN
+  IF p_size IS NULL OR p_size = '' THEN
+    RETURN 1000.0;
+  END IF;
+  
+  v_num := (SUBSTRING(LOWER(p_size) FROM '^[0-9.]+'))::DOUBLE PRECISION;
+  v_unit := TRIM(SUBSTRING(LOWER(p_size) FROM '[a-z]+$'));
+  
+  IF v_unit IN ('l', 'ltr', 'litre', 'kg') THEN
+    RETURN v_num * 1000.0;
+  ELSIF v_unit IN ('ml', 'gm') THEN
+    RETURN v_num;
+  END IF;
+  
+  RETURN COALESCE(v_num, 1000.0);
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION revert_sales_stock(p_order_id INT)
 RETURNS VOID AS $$ 
 DECLARE
@@ -36,21 +59,21 @@ BEGIN
     END IF;
 
     -- Look up the formulation for the technical restore
-    SELECT * INTO v_formulation FROM formulations WHERE product_id = v_item.product_id LIMIT 1;
-    IF FOUND THEN
+    SELECT * INTO v_formulation FROM formulations WHERE LOWER(product_name) = LOWER(v_item.product_name) LIMIT 1;
+    IF FOUND AND v_formulation.batch_size > 0 THEN
       FOR v_ing IN SELECT * FROM formulation_ingredients WHERE formulation_id = v_formulation.id LOOP
         INSERT INTO stock_movements (batch_id, txn_type, txn_id, qty)
-        SELECT id, 'Sale Edited (Formulation)', p_order_id, (v_qty * v_ing.quantity)
+        SELECT id, 'Sale Edited (Formulation)', p_order_id, ((v_qty * (get_pack_size_ml(v_item.packing_size) / 1000.0) / v_formulation.batch_size) * v_ing.quantity)
         FROM stock_batches
         WHERE item_id = v_ing.product_id AND item_type = 'Inventory'
         ORDER BY id DESC LIMIT 1;
 
         UPDATE stock_batches 
-        SET current_qty = current_qty + (v_qty * v_ing.quantity)
+        SET current_qty = current_qty + ((v_qty * (get_pack_size_ml(v_item.packing_size) / 1000.0) / v_formulation.batch_size) * v_ing.quantity)
         WHERE id = (SELECT id FROM stock_batches WHERE item_id = v_ing.product_id AND item_type = 'Inventory' ORDER BY id DESC LIMIT 1);
 
         UPDATE inventory_items
-        SET stock = COALESCE(stock, 0) + (v_qty * v_ing.quantity)
+        SET stock = COALESCE(stock, 0) + ((v_qty * (get_pack_size_ml(v_item.packing_size) / 1000.0) / v_formulation.batch_size) * v_ing.quantity)
         WHERE id = v_ing.product_id;
       END LOOP;
     END IF;
@@ -151,21 +174,21 @@ BEGIN
       WHERE id = v_bottle_id;
     END IF;
 
-    SELECT * INTO v_formulation FROM formulations WHERE product_id = (v_item->>'product_id')::INT LIMIT 1;
-    IF FOUND THEN
+    SELECT * INTO v_formulation FROM formulations WHERE LOWER(product_name) = LOWER(v_item->>'product_name') LIMIT 1;
+    IF FOUND AND v_formulation.batch_size > 0 THEN
       FOR v_ing IN SELECT * FROM formulation_ingredients WHERE formulation_id = v_formulation.id LOOP
         INSERT INTO stock_movements (batch_id, txn_type, txn_id, qty)
-        SELECT id, 'Sale (Formulation)', p_order_id, -(v_qty * v_ing.quantity)
+        SELECT id, 'Sale (Formulation)', p_order_id, -((v_qty * (get_pack_size_ml(COALESCE(v_item->>'packing_size', v_item->>'packaging_size')) / 1000.0) / v_formulation.batch_size) * v_ing.quantity)
         FROM stock_batches
         WHERE item_id = v_ing.product_id AND item_type = 'Inventory'
         ORDER BY id ASC LIMIT 1;
 
         UPDATE stock_batches 
-        SET current_qty = current_qty - (v_qty * v_ing.quantity)
+        SET current_qty = current_qty - ((v_qty * (get_pack_size_ml(COALESCE(v_item->>'packing_size', v_item->>'packaging_size')) / 1000.0) / v_formulation.batch_size) * v_ing.quantity)
         WHERE id = (SELECT id FROM stock_batches WHERE item_id = v_ing.product_id AND item_type = 'Inventory' ORDER BY id ASC LIMIT 1);
 
         UPDATE inventory_items
-        SET stock = COALESCE(stock, 0) - (v_qty * v_ing.quantity)
+        SET stock = COALESCE(stock, 0) - ((v_qty * (get_pack_size_ml(COALESCE(v_item->>'packing_size', v_item->>'packaging_size')) / 1000.0) / v_formulation.batch_size) * v_ing.quantity)
         WHERE id = v_ing.product_id;
       END LOOP;
     END IF;
@@ -239,21 +262,21 @@ BEGIN
       WHERE id = v_bottle_id;
     END IF;
 
-    SELECT * INTO v_formulation FROM formulations WHERE product_id = (v_item->>'product_id')::INT LIMIT 1;
-    IF FOUND THEN
+    SELECT * INTO v_formulation FROM formulations WHERE LOWER(product_name) = LOWER(v_item->>'product_name') LIMIT 1;
+    IF FOUND AND v_formulation.batch_size > 0 THEN
       FOR v_ing IN SELECT * FROM formulation_ingredients WHERE formulation_id = v_formulation.id LOOP
         INSERT INTO stock_movements (batch_id, txn_type, txn_id, qty)
-        SELECT id, 'Sale (Formulation)', v_order_id, -(v_qty * v_ing.quantity)
+        SELECT id, 'Sale (Formulation)', v_order_id, -((v_qty * (get_pack_size_ml(COALESCE(v_item->>'packing_size', v_item->>'packaging_size')) / 1000.0) / v_formulation.batch_size) * v_ing.quantity)
         FROM stock_batches
         WHERE item_id = v_ing.product_id AND item_type = 'Inventory'
         ORDER BY id ASC LIMIT 1;
 
         UPDATE stock_batches 
-        SET current_qty = current_qty - (v_qty * v_ing.quantity)
+        SET current_qty = current_qty - ((v_qty * (get_pack_size_ml(COALESCE(v_item->>'packing_size', v_item->>'packaging_size')) / 1000.0) / v_formulation.batch_size) * v_ing.quantity)
         WHERE id = (SELECT id FROM stock_batches WHERE item_id = v_ing.product_id AND item_type = 'Inventory' ORDER BY id ASC LIMIT 1);
 
         UPDATE inventory_items
-        SET stock = COALESCE(stock, 0) - (v_qty * v_ing.quantity)
+        SET stock = COALESCE(stock, 0) - ((v_qty * (get_pack_size_ml(COALESCE(v_item->>'packing_size', v_item->>'packaging_size')) / 1000.0) / v_formulation.batch_size) * v_ing.quantity)
         WHERE id = v_ing.product_id;
       END LOOP;
     END IF;
