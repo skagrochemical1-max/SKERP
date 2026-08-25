@@ -217,19 +217,10 @@ function renderInventoryValueSection() {
   window.dashboardInventoryCategoryTotals = categoryTotals;
   window.dashboardInventoryTotal = totalValue;
   
-  // Populate dropdown if not already populated
   const select = document.getElementById('dashboard-inventory-filter');
-  if (select && select.options.length <= 1) {
-    const categories = Object.keys(categoryTotals).sort();
-    categories.forEach(cat => {
-      const opt = document.createElement('option');
-      opt.value = cat;
-      opt.textContent = cat;
-      select.appendChild(opt);
-    });
-    
-    // Add event listener to re-render when dropdown changes
+  if (select && !select.dataset.listenerAdded) {
     select.addEventListener('change', updateInventoryValueDisplay);
+    select.dataset.listenerAdded = 'true';
   }
   
   updateInventoryValueDisplay();
