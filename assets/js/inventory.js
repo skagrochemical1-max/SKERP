@@ -1090,12 +1090,6 @@ async function saveBottleOption() {
     console.error(err);
     APP.showToast('Failed to save bottle option: ' + err.message, 'error');
   }
-    await loadMasterOptions();
-    renderGroupedOptions('bottle_option', 'bottle-options-groups', 'editBottleOption', 'deleteMasterOption');
-  } catch(err) {
-    console.error(err);
-    APP.showToast('Failed to save bottle option', 'error');
-  }
 }
 
 function resetBottleManagerForm() {
