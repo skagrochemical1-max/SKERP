@@ -62,12 +62,14 @@ DECLARE
   v_batch RECORD;
   v_take DOUBLE PRECISION;
   v_available DOUBLE PRECISION;
+  v_inv_stock DOUBLE PRECISION;
+  v_dummy_batch_id INT;
 BEGIN
   IF p_inventory_id IS NULL OR p_quantity <= 0 THEN
     RAISE EXCEPTION 'Invalid sales inventory mapping or quantity';
   END IF;
 
-  PERFORM 1 FROM inventory_items WHERE id = p_inventory_id;
+  SELECT coalesce(stock, 0) INTO v_inv_stock FROM inventory_items WHERE id = p_inventory_id;
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Inventory item % does not exist', p_inventory_id;
   END IF;
@@ -75,8 +77,9 @@ BEGIN
   SELECT coalesce(sum(current_qty), 0) INTO v_available
   FROM stock_batches
   WHERE item_id = p_inventory_id AND item_type = 'Inventory' AND current_qty > 0;
-  IF v_available < p_quantity THEN
-    RAISE EXCEPTION 'INSUFFICIENT_STOCK: % available for inventory item %; % required', v_available, p_inventory_id, p_quantity;
+  
+  IF v_available < p_quantity AND v_inv_stock < p_quantity THEN
+    RAISE EXCEPTION 'INSUFFICIENT_STOCK: % available for inventory item %; % required', greatest(v_available, v_inv_stock), p_inventory_id, p_quantity;
   END IF;
 
   RAISE LOG 'SALES INVENTORY UPDATE order_id=% inventory_id=% quantity_deducted=% txn_type=%',
@@ -102,6 +105,16 @@ BEGIN
 
     v_remaining := v_remaining - v_take;
   END LOOP;
+
+  -- Absorb any remaining mismatch into a fallback overdraft batch
+  IF v_remaining > 0 THEN
+    INSERT INTO stock_batches (item_id, item_type, batch_no, initial_qty, current_qty)
+    VALUES (p_inventory_id, 'Inventory', 'OVERDRAFT-' || p_order_id, 0, -v_remaining)
+    RETURNING id INTO v_dummy_batch_id;
+
+    INSERT INTO stock_movements (batch_id, txn_type, txn_id, qty)
+    VALUES (v_dummy_batch_id, p_txn_type || ' (Overdraft)', p_order_id, -v_remaining);
+  END IF;
 
   UPDATE inventory_items
   SET stock = coalesce(stock, 0) - p_quantity
