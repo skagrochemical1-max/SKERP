@@ -10,10 +10,10 @@
 const SIDEBAR_HTML = `
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-header">
-    <div class="sidebar-logo">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+    <div class="sidebar-logo" style="padding: 2px;">
+      <img src="../assets/images/sk-logo.jpg" alt="S K Agro" style="width: 100%; height: 100%; object-fit: contain; border-radius: 4px;">
     </div>
-    <div class="sidebar-brand"><h1>AgroChem ERP</h1><span>Pesticide Management</span></div>
+    <div class="sidebar-brand"><h1>S K Agro Chemical</h1><span>Pesticide Management</span></div>
     <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" type="button" aria-label="Toggle sidebar" title="Toggle sidebar">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
     </button>
@@ -50,13 +50,13 @@ const TOPBAR_HTML = (title, breadcrumb) => `
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
     </button>
     <div class="topbar-mobile-brand">
-      <div class="topbar-logo">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width: 15px; height: 15px;"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      <div class="topbar-logo" style="padding: 1px;">
+        <img src="../assets/images/sk-logo.jpg" alt="S K Agro" style="width: 100%; height: 100%; object-fit: contain; border-radius: 2px;">
       </div>
-      <span>AgroChem ERP</span>
+      <span>S K Agro Chemical</span>
     </div>
     <div class="topbar-brand">
-      <span class="topbar-brand-name">AgroChem ERP</span>
+      <span class="topbar-brand-name">S K Agro Chemical</span>
     </div>
 
     <div class="topbar-divider"></div>
@@ -128,7 +128,7 @@ const PROFILE_MODAL = `
       <div style="display:grid;gap:12px">
         <div style="padding:14px 16px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg)">
           <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px">Workspace</div>
-          <div style="font-size:14px;font-weight:600;color:var(--text-primary)">AgroChem ERP</div>
+          <div style="font-size:14px;font-weight:600;color:var(--text-primary)">S K Agro Chemical</div>
         </div>
         <div style="padding:14px 16px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg)">
           <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px">Access</div>
