@@ -71,13 +71,15 @@ function renderLowStockAlerts() {
 }
 
 function getCategorizedMaterials(category) {
-  if (category === 'Technical') {
-    return inventoryItems.filter(item => String(item.category) === 'Technical');
+  const cat = String(category).toLowerCase().trim();
+  
+  if (cat === 'technical') {
+    return inventoryItems.filter(item => String(item.category).toLowerCase().trim() === 'technical');
   }
-  if (category === 'Others') {
-    return inventoryItems.filter(item => !['Bottles', 'Boxes', 'Labels', 'Technical'].includes(item.category));
+  if (cat === 'others') {
+    return inventoryItems.filter(item => !['bottles', 'boxes', 'labels', 'technical'].includes(String(item.category).toLowerCase().trim()));
   }
-  return inventoryItems.filter(item => String(item.category) === category);
+  return inventoryItems.filter(item => String(item.category).toLowerCase().trim() === cat);
 }
 
 function populateCategorizedMaterialSelects() {
@@ -134,7 +136,7 @@ async function loadDailyTransactions() {
     UTILS.renderTableSkeleton('daily-transactions-table');
     await DB.initDB();
 
-    const { data: invData, error: invErr } = await window.dbClient.from('inventory').select('*').neq('category', 'Bottles');
+    const { data: invData, error: invErr } = await window.dbClient.from('inventory').select('*');
     inventoryItems = invErr ? [] : invData || [];
     populateCategorizedMaterialSelects();
     if (window.UTILS?.initAllAutocompleteSelects) {
