@@ -274,6 +274,7 @@ async function viewBatches(type, id) {
 
 function filterData(data) {
   const q = document.getElementById('search-input')?.value.toLowerCase();
+  const techFilter = document.getElementById('tech-filter-select')?.value;
   return data.filter(it => {
     if (activeTab !== 'All') {
       if (activeTab === 'Technical' && it.category !== 'Technical') return false;
@@ -282,6 +283,11 @@ function filterData(data) {
       if (activeTab === 'Labels' && it.category !== 'Labels') return false;
       if (activeTab === 'Others' && ['Technical','Bottles','Boxes','Labels'].includes(it.category || it.item_type)) return false;
     }
+    
+    if (activeTab === 'Technical' && techFilter && it.item_subtype !== techFilter) {
+      return false;
+    }
+    
     if (q && !it.name.toLowerCase().includes(q)) return false;
     return true;
   });
@@ -1084,12 +1090,12 @@ async function saveBottleOption() {
     console.error(err);
     APP.showToast('Failed to save bottle option: ' + err.message, 'error');
   }
-}
-
-function editBottleOption(id, type, size) {
-  document.getElementById('bottle-option-id').value = id;
-  document.getElementById('bottle-type-input').value = type;
-  document.getElementById('bottle-size-input').value = size;
+    await loadMasterOptions();
+    renderGroupedOptions('bottle_option', 'bottle-options-groups', 'editBottleOption', 'deleteMasterOption');
+  } catch(err) {
+    console.error(err);
+    APP.showToast('Failed to save bottle option', 'error');
+  }
 }
 
 function resetBottleManagerForm() {
@@ -1097,38 +1103,39 @@ function resetBottleManagerForm() {
   document.getElementById('bottle-option-id').value = '';
 }
 
+function editBottleOption(id) {
+  const opt = masterCache.bottles.find(o => o.id == id);
+  if (!opt) return;
+  document.getElementById('bottle-option-id').value = opt.id;
+  document.getElementById('bottle-type-input').value = opt.parent_value || '';
+  document.getElementById('bottle-size-input').value = opt.value || '';
+}
+
 // Box Option Manager
 async function saveBoxOption() {
   const id = document.getElementById('box-option-id').value;
   const type = document.getElementById('box-type-input').value.trim();
   const size = document.getElementById('box-size-input').value.trim();
+  if (!type || !size) { APP.showToast('Type and size are required', 'warning'); return; }
   
-  if (!type || !size) { APP.showToast('Type and size are required', 'error'); return; }
-  
+  const payload = { category: 'box_option', parent_value: type, value: size };
   try {
-    const payload = { category: 'box_option', parent_value: type, value: size };
     if (id) {
       const { error } = await window.dbClient.from('master_options').update(payload).eq('id', id);
       if (error) throw error;
+      APP.showToast('Box option updated', 'success');
     } else {
       const { error } = await window.dbClient.from('master_options').insert([payload]);
       if (error) throw error;
+      APP.showToast('Box option added', 'success');
     }
-    
-    APP.showToast(id ? 'Option updated successfully' : 'Option added successfully', 'success');
     resetBoxManagerForm();
-    await renderGroupedOptions('box_option', 'box-options-groups', 'editBoxOption', 'deleteMasterOption');
     await loadMasterOptions();
-  } catch (err) {
+    renderGroupedOptions('box_option', 'box-options-groups', 'editBoxOption', 'deleteMasterOption');
+  } catch(err) {
     console.error(err);
-    APP.showToast('Failed to save box option: ' + err.message, 'error');
+    APP.showToast('Failed to save box option', 'error');
   }
-}
-
-function editBoxOption(id, type, size) {
-  document.getElementById('box-option-id').value = id;
-  document.getElementById('box-type-input').value = type;
-  document.getElementById('box-size-input').value = size;
 }
 
 function resetBoxManagerForm() {
@@ -1136,18 +1143,67 @@ function resetBoxManagerForm() {
   document.getElementById('box-option-id').value = '';
 }
 
-async function deleteMasterOption(id) {
-  APP.showConfirm('Delete this option?', async () => {
+function editBoxOption(id) {
+  const opt = masterCache.boxes.find(o => o.id == id);
+  if (!opt) return;
+  document.getElementById('box-option-id').value = opt.id;
+  document.getElementById('box-type-input').value = opt.parent_value || '';
+  document.getElementById('box-size-input').value = opt.value || '';
+}
+
+// Label Option Manager
+async function saveLabelOption() {
+  const id = document.getElementById('label-option-id').value;
+  const type = document.getElementById('label-type-input').value.trim();
+  const size = document.getElementById('label-size-input').value.trim();
+  if (!type || !size) { APP.showToast('Type and size are required', 'warning'); return; }
+  
+  const payload = { category: 'label_option', parent_value: type, value: size };
+  try {
+    if (id) {
+      const { error } = await window.dbClient.from('master_options').update(payload).eq('id', id);
+      if (error) throw error;
+      APP.showToast('Label option updated', 'success');
+    } else {
+      const { error } = await window.dbClient.from('master_options').insert([payload]);
+      if (error) throw error;
+      APP.showToast('Label option added', 'success');
+    }
+    resetLabelManagerForm();
+    await loadMasterOptions();
+    renderGroupedOptions('label_option', 'label-options-groups', 'editLabelOption', 'deleteMasterOption');
+  } catch(err) {
+    console.error(err);
+    APP.showToast('Failed to save label option', 'error');
+  }
+}
+
+function resetLabelManagerForm() {
+  const form = document.getElementById('label-manager-form');
+  if(form) form.reset();
+  const idInput = document.getElementById('label-option-id');
+  if(idInput) idInput.value = '';
+}
+
+function editLabelOption(id) {
+  const opt = masterCache.labels.find(o => o.id == id);
+  if (!opt) return;
+  document.getElementById('label-option-id').value = opt.id;
+  document.getElementById('label-type-input').value = opt.parent_value || '';
+  document.getElementById('label-size-input').value = opt.value || '';
+}
+
+async function deleteMasterOption(id, cat) {
+  APP.showConfirm('Delete Option', 'Are you sure you want to delete this option? This cannot be undone.', async () => {
     try {
       const { error } = await window.dbClient.from('master_options').delete().eq('id', id);
       if (error) throw error;
+      APP.showToast('Option deleted successfully', 'success');
       
-      APP.showToast('Option deleted', 'success');
-      
-      const cat = activeTab;
       if (cat === 'Technical') await renderTechnicalUnits();
       if (cat === 'Bottles') await renderGroupedOptions('bottle_option', 'bottle-options-groups', 'editBottleOption', 'deleteMasterOption');
       if (cat === 'Boxes') await renderGroupedOptions('box_option', 'box-options-groups', 'editBoxOption', 'deleteMasterOption');
+      if (cat === 'Labels') await renderGroupedOptions('label_option', 'label-options-groups', 'editLabelOption', 'deleteMasterOption');
       
       await loadMasterOptions();
     } catch (err) {
@@ -1162,10 +1218,23 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     document.querySelector('.tab-btn.active').classList.remove('active'); 
     btn.classList.add('active'); 
     activeTab = btn.dataset.tab; 
+    
+    const manageBtn = document.getElementById('manage-inventory-options-btn');
+    if (manageBtn) {
+      manageBtn.style.display = (activeTab === 'Bottles') ? 'none' : 'inline-flex';
+    }
+
+    const techFilter = document.getElementById('tech-filter-select');
+    if (techFilter) {
+      techFilter.style.display = (activeTab === 'Technical') ? 'inline-block' : 'none';
+      if (activeTab !== 'Technical') techFilter.value = '';
+    }
+
     renderTable(allInventory); 
   }); 
 });
 
 document.getElementById('search-input')?.addEventListener('input', () => renderTable(allInventory));
+document.getElementById('tech-filter-select')?.addEventListener('change', () => renderTable(allInventory));
 
 loadInventory();

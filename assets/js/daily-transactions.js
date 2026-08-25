@@ -426,20 +426,34 @@ function renderMaterialsList() {
       return `
         <div class="material-row">
           <div class="material-item-meta">
+            <span class="mobile-label">Item</span>
             <div class="material-item-name">${item.item_name}</div>
             <div class="material-item-sub">
               <span>Base unit: ${item.base_unit || item.unit}</span>
             </div>
           </div>
-          <div><span class="material-pill">${item.item_type || 'Other'}</span></div>
-          <div>${UTILS.fmtNumber(stock)} ${item.base_unit || item.unit}</div>
-          <div><input type="number" class="form-input" value="${item.quantity}" min="0.01" step="0.01" onchange="updateMaterialQty(${idx}, this.value)"></div>
           <div>
+            <span class="mobile-label">Category</span>
+            <span class="material-pill">${item.item_type || 'Other'}</span>
+          </div>
+          <div>
+            <span class="mobile-label">Stock</span>
+            ${UTILS.fmtNumber(stock)} ${item.base_unit || item.unit}
+          </div>
+          <div>
+            <span class="mobile-label">Quantity</span>
+            <input type="number" class="form-input" value="${item.quantity}" min="0.01" step="0.01" onchange="updateMaterialQty(${idx}, this.value)">
+          </div>
+          <div>
+            <span class="mobile-label">Unit</span>
             <select class="form-select" onchange="updateMaterialUnit(${idx}, this.value)">
               ${units.map(unit => `<option value="${unit}" ${item.unit === unit ? 'selected' : ''}>${unit}</option>`).join('')}
             </select>
           </div>
-          <div><button type="button" class="action-btn delete" onclick="removeInventoryMaterial(${idx})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button></div>
+          <div>
+            <span class="mobile-label">Action</span>
+            <button type="button" class="action-btn delete" onclick="removeInventoryMaterial(${idx})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
+          </div>
         </div>
       `;
     }).join('')}

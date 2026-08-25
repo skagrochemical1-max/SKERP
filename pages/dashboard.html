@@ -45,6 +45,31 @@
         </a>
 
       </div>
+      
+      <div class="card" style="margin-bottom: 24px;">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <div class="card-title">Inventory Value</div>
+            <div class="card-subtitle">Total value of inventory stock</div>
+          </div>
+          <div>
+            <select id="dashboard-inventory-filter" class="form-select" style="min-width: 150px; font-weight: 500;">
+              <option value="All">All Inventory</option>
+            </select>
+          </div>
+        </div>
+        <div class="card-body">
+          <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px;">
+            <div>
+              <div class="stat-label" id="dashboard-inventory-selected-type" style="font-weight: 600; margin-bottom: 8px;">Selected Type: All Inventory</div>
+              <div class="stat-value" id="dashboard-inventory-total-value" style="font-size: 32px; color: var(--primary);">Loading...</div>
+            </div>
+          </div>
+          <div id="dashboard-inventory-breakdown" style="display: none; overflow-x: auto;">
+            <!-- Breakdown table dynamically injected -->
+          </div>
+        </div>
+      </div>
 
       <div class="activity-row">
         <div class="card">

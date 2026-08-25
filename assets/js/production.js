@@ -160,14 +160,17 @@ function renderIngredientsTable() {
     
     return `<tr>
       <td>
+        <span class="mobile-label">Inventory Item</span>
         <select class="form-select uss-inventory-select" onchange="updateIngredient(${idx}, 'inventory_id', this.value)">
           ${options.replace(`value="${line.inventory_id}"`, `value="${line.inventory_id}" selected`)}
         </select>
       </td>
       <td>
+        <span class="mobile-label">Quantity</span>
         <input type="number" class="form-input" style="width: 100%;" min="0.01" step="0.01" value="${line.quantity || ''}" onchange="updateIngredient(${idx}, 'quantity', this.value)">
       </td>
       <td>
+        <span class="mobile-label">Unit</span>
         <select class="form-select" onchange="updateIngredient(${idx}, 'unit', this.value)">
           <option value="Kg" ${unitLabel === 'Kg' || unitLabel === 'kg' ? 'selected' : ''}>Kg</option>
           <option value="Litre" ${unitLabel === 'Litre' || unitLabel === 'L' || unitLabel === 'litre' ? 'selected' : ''}>Litre</option>
@@ -178,12 +181,14 @@ function renderIngredientsTable() {
         </select>
       </td>
       <td>
+        <span class="mobile-label">Action</span>
         <select class="form-select" style="font-weight: bold; color: ${line.action === 'INCREASE' ? 'var(--success)' : 'var(--danger)'};" onchange="updateIngredient(${idx}, 'action', this.value)">
           <option value="DECREASE" ${line.action === 'DECREASE' ? 'selected' : ''}>DECREASE</option>
           <option value="INCREASE" ${line.action === 'INCREASE' ? 'selected' : ''}>INCREASE</option>
         </select>
       </td>
       <td>
+        <span class="mobile-label">Remove</span>
         <button type="button" class="icon-btn delete-btn" style="margin-top: 4px;" onclick="removeIngredientRow(${idx})">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
         </button>

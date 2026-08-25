@@ -533,24 +533,39 @@ async function renderOrderItems() {
       return `
         <tr data-row-idx="${idx}">
           <td style="min-width:180px">
+            <span class="mobile-label">Product</span>
             <select data-native class="form-select order-product-select" data-idx="${idx}" onchange="onProductSelectChange(${idx}, this.value)">
               <option value="">Select Product</option>
               ${cachedProductsList.map(p => `<option value="${p.id}" ${p.id == item.product_id ? 'selected' : ''}>${p.name}</option>`).join('')}
             </select>
           </td>
           <td style="min-width:140px" class="pack-size-cell">
+            <span class="mobile-label">Pack Size</span>
             ${pkgSelectHtml}
           </td>
           <td style="min-width:180px">
+            <span class="mobile-label">Bottle</span>
             <select data-native class="form-select order-bottle-select" data-idx="${idx}" onchange="onBottleChange(${idx}, this.value)">
               <option value="">Select Bottle</option>
               ${cachedBottlesList.map(b => `<option value="${b.id}" ${b.id == item.bottle_inventory_id ? 'selected' : ''}>${b.name} (${parseFloat(b.total_stock || b.stock || 0).toFixed(0)} avail)</option>`).join('')}
             </select>
           </td>
-          <td><input type="number" class="form-input item-qty-input" value="${item.quantity}" onchange="onQtyChange(${idx}, this.value)"></td>
-          <td><input type="number" class="form-input item-price-input" value="${item.unit_price}" onchange="onUnitPriceChange(${idx}, this.value)"></td>
-          <td class="cell-amount item-total-display">${UTILS.fmtCurrency(item.total)}</td>
-          <td><button class="action-btn delete" onclick="removeItem(${idx})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button></td>
+          <td>
+            <span class="mobile-label">Quantity</span>
+            <input type="number" class="form-input item-qty-input" value="${item.quantity}" onchange="onQtyChange(${idx}, this.value)">
+          </td>
+          <td>
+            <span class="mobile-label">Unit Price (₹)</span>
+            <input type="number" class="form-input item-price-input" value="${item.unit_price}" onchange="onUnitPriceChange(${idx}, this.value)">
+          </td>
+          <td class="cell-amount item-total-display">
+            <span class="mobile-label">Total</span>
+            ${UTILS.fmtCurrency(item.total)}
+          </td>
+          <td>
+            <span class="mobile-label">Remove</span>
+            <button class="action-btn delete" onclick="removeItem(${idx})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
+          </td>
         </tr>
       `;
     }).join('');

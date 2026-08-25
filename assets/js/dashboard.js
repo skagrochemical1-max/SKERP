@@ -35,19 +35,41 @@ async function loadDashboard() {
       .limit(5);
     if (recErr) throw recErr;
 
-      const { data: invData, error: invErr } = await window.dbClient.from('inventory_items').select('name, unit, reorder_level, stock, category');
+      const { data: invData, error: invErr } = await window.dbClient.from('inventory_items').select('id, name, unit, reorder_level, stock, category');
       if (invErr) throw invErr;
+
+      const { data: batches } = await window.dbClient.from('stock_batches').select('item_id, current_qty, purchase_price').eq('item_type', 'Inventory');
+      const costMap = {};
+      if (batches) {
+        batches.forEach(b => {
+          if (!costMap[b.item_id]) costMap[b.item_id] = { totalCost: 0, totalQty: 0 };
+          const qty = parseFloat(b.current_qty) || 0;
+          const price = parseFloat(b.purchase_price) || 0;
+          if (qty > 0) {
+            costMap[b.item_id].totalCost += (qty * price);
+            costMap[b.item_id].totalQty += qty;
+          }
+        });
+      }
       
-      const stockAlerts = (invData || [])
+      window.dashboardInventoryData = (invData || []).map(p => {
+         const stock = parseFloat(p.stock || 0);
+         let cost = 0;
+         if (costMap[p.id] && costMap[p.id].totalQty > 0) {
+           cost = costMap[p.id].totalCost / costMap[p.id].totalQty;
+         }
+         return { ...p, stock, val: stock * cost };
+      });
+      
+      const stockAlerts = window.dashboardInventoryData
         .filter(p => {
-           const stock = parseFloat(p.stock || 0);
            const threshold = parseFloat(p.reorder_level || 0);
-           // Alert if stock is less than or equal to threshold
-           // Or if threshold is 0, alert if stock is exactly 0
-           return stock <= threshold;
+           return p.stock <= threshold;
         })
         .map(p => ({ ...p, type: p.category || 'Item' }))
-        .sort((a, b) => parseFloat(a.stock || 0) - parseFloat(b.stock || 0));
+        .sort((a, b) => p.stock - b.stock);
+
+      setTimeout(() => renderInventoryValueSection(), 0);
 
     const stats = {
       kpis: { revenue, activeOrders: activeOrders || 0 },
@@ -177,3 +199,78 @@ function renderStockAlerts(alerts) {
 }
 
 loadDashboard();
+function renderInventoryValueSection() {
+  const data = window.dashboardInventoryData || [];
+  
+  // Aggregate totals by category
+  const categoryTotals = {};
+  let totalValue = 0;
+  
+  data.forEach(item => {
+    const cat = item.category || 'Other';
+    const val = item.val || 0;
+    if (!categoryTotals[cat]) categoryTotals[cat] = 0;
+    categoryTotals[cat] += val;
+    totalValue += val;
+  });
+  
+  window.dashboardInventoryCategoryTotals = categoryTotals;
+  window.dashboardInventoryTotal = totalValue;
+  
+  // Populate dropdown if not already populated
+  const select = document.getElementById('dashboard-inventory-filter');
+  if (select && select.options.length <= 1) {
+    const categories = Object.keys(categoryTotals).sort();
+    categories.forEach(cat => {
+      const opt = document.createElement('option');
+      opt.value = cat;
+      opt.textContent = cat;
+      select.appendChild(opt);
+    });
+    
+    // Add event listener to re-render when dropdown changes
+    select.addEventListener('change', updateInventoryValueDisplay);
+  }
+  
+  updateInventoryValueDisplay();
+}
+
+function updateInventoryValueDisplay() {
+  const select = document.getElementById('dashboard-inventory-filter');
+  const typeLabel = document.getElementById('dashboard-inventory-selected-type');
+  const valDisplay = document.getElementById('dashboard-inventory-total-value');
+  const breakdownContainer = document.getElementById('dashboard-inventory-breakdown');
+  
+  if (!select || !typeLabel || !valDisplay) return;
+  
+  const selected = select.value;
+  
+  if (selected === 'All') {
+    typeLabel.textContent = 'Selected Type: All Inventory';
+    valDisplay.textContent = UTILS.fmtCurrency(window.dashboardInventoryTotal || 0);
+    
+    // Build breakdown table
+    if (breakdownContainer) {
+      const cats = Object.entries(window.dashboardInventoryCategoryTotals || {});
+      if (cats.length > 0) {
+        let html = '<table class="data-table" style="margin-top: 16px;"><thead><tr><th>Inventory Type</th><th style="text-align: right;">Total Value</th></tr></thead><tbody>';
+        cats.sort((a,b) => b[1] - a[1]).forEach(([c, v]) => {
+          html += '<tr><td>' + c + '</td><td style="text-align: right;">' + UTILS.fmtCurrency(v) + '</td></tr>';
+        });
+        html += '<tr style="font-weight: 700;"><td>Total Inventory</td><td style="text-align: right;">' + UTILS.fmtCurrency(window.dashboardInventoryTotal || 0) + '</td></tr>';
+        html += '</tbody></table>';
+        breakdownContainer.innerHTML = html;
+        breakdownContainer.style.display = 'block';
+      } else {
+        breakdownContainer.style.display = 'none';
+      }
+    }
+  } else {
+    typeLabel.textContent = 'Selected Type: ' + selected;
+    const val = (window.dashboardInventoryCategoryTotals || {})[selected] || 0;
+    valDisplay.textContent = UTILS.fmtCurrency(val);
+    if (breakdownContainer) {
+      breakdownContainer.style.display = 'none';
+    }
+  }
+}

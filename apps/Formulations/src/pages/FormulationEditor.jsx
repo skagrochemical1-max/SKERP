@@ -419,6 +419,7 @@ const FormulationEditor = () => {
                     {formulation.ingredients.map((ingredient, index) => (
                       <tr key={index}>
                         <td>
+                          <span className="mobile-label">Ingredient Name</span>
                           <input
                             type="text"
                             value={ingredient.name}
@@ -429,6 +430,7 @@ const FormulationEditor = () => {
                           />
                         </td>
                         <td>
+                          <span className="mobile-label">Percentage (%)</span>
                           <input
                             type="number"
                             value={ingredient.percentage || ''}
@@ -440,8 +442,11 @@ const FormulationEditor = () => {
                             style={{ width: '100%' }}
                           />
                         </td>
-                        <td style={{ textAlign: 'center', fontSize: '11px', fontWeight: '800', color: 'var(--accent)' }}>OR</td>
+                        <td style={{ textAlign: 'center', fontSize: '11px', fontWeight: '800', color: 'var(--accent)' }}>
+                          OR
+                        </td>
                         <td>
+                          <span className="mobile-label">Quantity</span>
                           <div style={{ display: 'flex', gap: '4px' }}>
                             <input
                               type="number"
@@ -474,6 +479,7 @@ const FormulationEditor = () => {
                           </div>
                         </td>
                         <td>
+                          <span className="mobile-label">Cost/Unit (₹)</span>
                           <input
                             type="number"
                             value={ingredient.costPerUnit || ''}
@@ -490,6 +496,7 @@ const FormulationEditor = () => {
                           />
                         </td>
                         <td style={{ textAlign: 'center' }}>
+                          <span className="mobile-label">Remove</span>
                           <button
                             onClick={() => removeIngredient(index)}
                             disabled={formulation.ingredients.length <= 2}

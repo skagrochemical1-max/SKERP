@@ -210,6 +210,7 @@ function renderPurchaseItems() {
   tbody.innerHTML = purchaseItems.map((it, idx) => `
     <tr>
       <td style="min-width:220px;">
+        <span class="mobile-label">Item Name</span>
         <input type="text" 
                class="form-input item-search-input" 
                value="${it.item_name || ''}" 
@@ -219,12 +220,30 @@ function renderPurchaseItems() {
                oninput="onItemSearchInput(${idx}, this)" 
                onblur="hideItemSuggestionsLater(${idx})">
       </td>
-      <td><input type="text" class="form-input" value="${it.batch_no || ''}" placeholder="Batch #" onchange="updateItem(${idx}, 'batch_no', this.value)"></td>
-      <td><input type="date" class="form-input" value="${it.expiry_date ? it.expiry_date.split('T')[0] : ''}" onchange="updateItem(${idx}, 'expiry_date', this.value)"></td>
-      <td><input type="number" class="form-input" value="${it.quantity}" onchange="updateItem(${idx}, 'quantity', this.value)"></td>
-      <td><input type="number" class="form-input" value="${it.unit_price}" onchange="updateItem(${idx}, 'unit_price', this.value)"></td>
-      <td class="cell-amount" id="item-total-${idx}">${UTILS.fmtCurrency(it.total)}</td>
-      <td><button class="action-btn delete" onclick="removePurchaseItem(${idx})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button></td>
+      <td>
+        <span class="mobile-label">Batch #</span>
+        <input type="text" class="form-input" value="${it.batch_no || ''}" placeholder="Batch #" onchange="updateItem(${idx}, 'batch_no', this.value)">
+      </td>
+      <td>
+        <span class="mobile-label">Expiry Date</span>
+        <input type="date" class="form-input" value="${it.expiry_date ? it.expiry_date.split('T')[0] : ''}" onchange="updateItem(${idx}, 'expiry_date', this.value)">
+      </td>
+      <td>
+        <span class="mobile-label">Quantity</span>
+        <input type="number" class="form-input" value="${it.quantity}" onchange="updateItem(${idx}, 'quantity', this.value)">
+      </td>
+      <td>
+        <span class="mobile-label">Unit Price (₹)</span>
+        <input type="number" class="form-input" value="${it.unit_price}" onchange="updateItem(${idx}, 'unit_price', this.value)">
+      </td>
+      <td class="cell-amount" id="item-total-${idx}">
+        <span class="mobile-label">Total</span>
+        ${UTILS.fmtCurrency(it.total)}
+      </td>
+      <td>
+        <span class="mobile-label">Remove</span>
+        <button class="action-btn delete" onclick="removePurchaseItem(${idx})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
+      </td>
     </tr>
   `).join('');
   

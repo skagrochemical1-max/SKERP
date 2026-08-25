@@ -141,6 +141,7 @@ function renderIngredientRows() {
   tbody.innerHTML = ingredientRows.map(row => `
     <tr class="ingredient-row" data-row-id="${row.row_id}">
       <td>
+        <span class="mobile-label">Ingredient</span>
         <select
           class="form-select search-select ${row.duplicate_name ? 'is-warning' : ''}"
           data-autocomplete
@@ -152,6 +153,7 @@ function renderIngredientRows() {
         </select>
       </td>
       <td>
+        <span class="mobile-label">Percentage (%)</span>
         <input
           class="form-input"
           data-field="percentage"
@@ -162,6 +164,7 @@ function renderIngredientRows() {
         >
       </td>
       <td>
+        <span class="mobile-label">Quantity</span>
         <input
           class="form-input"
           data-field="quantity"
@@ -172,6 +175,7 @@ function renderIngredientRows() {
         >
       </td>
       <td>
+        <span class="mobile-label">Unit</span>
         <input
           class="form-input"
           data-field="unit"
@@ -180,6 +184,7 @@ function renderIngredientRows() {
         >
       </td>
       <td>
+        <span class="mobile-label">Cost/Unit</span>
         <input
           class="form-input"
           data-field="cost_per_unit"
@@ -190,10 +195,12 @@ function renderIngredientRows() {
         >
       </td>
       <td class="ingredient-or-cell">
+        <span class="mobile-label">Total Cost</span>
         <div data-field="total_cost_display" style="font-weight:700">${UTILS.fmtCurrency(0)}</div>
         <div data-field="entry_mode_hint" style="font-size:11px;color:var(--text-muted)">By %</div>
       </td>
       <td class="ingredient-or-cell">
+        <span class="mobile-label">Remove</span>
         <button type="button" class="action-btn delete" onclick="removeIngredientRow('${row.row_id}')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
         </button>
