@@ -545,7 +545,7 @@ function openAddLabel() {
     const banner = form.querySelector('.stock-breakdown-banner');
     if (banner) banner.remove();
   }
-  const labelOpts = (masterCache.labels && masterCache.labels.length > 0) ? masterCache.labels : masterCache.bottles;
+  const labelOpts = masterCache.labels || [];
   populateDependentTypes(labelOpts, 'tech-label-type-select', 'tech-label-size-select');
   toggleOpeningStockSection();
   goToInventoryStep('label', 1);
@@ -675,7 +675,7 @@ async function openEdit(type, id) {
       goToInventoryStep('label', 1);
       document.getElementById('label-modal-title').textContent = 'Edit Label Option';
       document.getElementById('label-form').reset();
-      const labelOpts = (masterCache.labels && masterCache.labels.length > 0) ? masterCache.labels : masterCache.bottles;
+      const labelOpts = masterCache.labels || [];
       populateDependentTypes(labelOpts, 'tech-label-type-select', 'tech-label-size-select');
       renderStockBreakdownBanner('label-form', it, openingQty);
       
@@ -1215,7 +1215,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     
     const manageBtn = document.getElementById('manage-inventory-options-btn');
     if (manageBtn) {
-      manageBtn.style.display = (activeTab === 'Bottles') ? 'none' : 'inline-flex';
+      manageBtn.style.display = 'inline-flex';
     }
 
     const techFilter = document.getElementById('tech-filter-select');
