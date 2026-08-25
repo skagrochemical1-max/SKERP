@@ -136,7 +136,7 @@ async function loadDailyTransactions() {
     UTILS.renderTableSkeleton('daily-transactions-table');
     await DB.initDB();
 
-    const { data: invData, error: invErr } = await window.dbClient.from('inventory').select('*');
+    const { data: invData, error: invErr } = await window.dbClient.from('inventory_items').select('*');
     inventoryItems = invErr ? [] : invData || [];
     populateCategorizedMaterialSelects();
     if (window.UTILS?.initAllAutocompleteSelects) {
