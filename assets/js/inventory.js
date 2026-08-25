@@ -191,7 +191,7 @@ function renderTable(data) {
     return `<tr>
       <td><input type="checkbox" class="row-check" value="${it.id}"></td>
       <td class="cell-bold"><div style="display:flex;flex-direction:column"><span>${it.name}</span><span style="font-size:10px;color:var(--text-muted)">RAW MATERIAL</span></div></td>
-      <td><span class="badge badge-purple">${it.category || '—'}</span></td>
+      <td><span class="badge badge-purple">${it.item_subtype || it.category || '—'}</span></td>
       <td style="font-weight:700;color:var(--accent)">${it.total_stock.toFixed(2)}</td>
       <td style="font-weight:600;">${it.unit || 'Nos'}</td>
       <td>${UTILS.fmtCurrency(it.avg_cost)}</td>
@@ -820,6 +820,7 @@ async function saveTechnicalItem() {
     const payload = {
       name: d.name,
       category: 'Technical',
+      item_subtype: d.item_subtype,
       unit: d.unit || 'Nos',
       description: d.description,
       opening_qty: d.opening_qty,
