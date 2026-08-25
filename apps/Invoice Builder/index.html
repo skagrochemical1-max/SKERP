@@ -1,10 +1,10 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Invoice Builder</title>
+  <title>S K ERP - Invoice Builder</title>
   <meta name="description" content="Professional invoice generator." />
   <meta name="keywords" content="invoice, invoice builder, professional invoice, GST invoice" />
   <meta name="author" content="Invoice Builder" />
@@ -37,11 +37,11 @@
   <link rel="stylesheet" href="css/main.css?v=57.0.2" />
   <link rel="stylesheet" href="css/override.css?v=57.0.2" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-</head>
+<link rel="icon" type="image/jpeg" href="../../assets/images/sk-logo.jpg"></head>
 
 <body>
 
-  <!-- ── LOGIN ───────────────────────────────────────────── -->
+  <!-- â”€â”€ LOGIN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
   <div id="login-screen">
     <div class="login-card">
       <div class="login-logo" style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:0;">
@@ -66,13 +66,13 @@
     </div>
   </div>
 
-  <!-- ── TOAST ──────────────────────────────────────────── -->
+  <!-- â”€â”€ TOAST â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
   <div id="toast"></div>
 
-  <!-- ── AUTOCOMPLETE DROPDOWN (shared, absolutely positioned) ── -->
+  <!-- â”€â”€ AUTOCOMPLETE DROPDOWN (shared, absolutely positioned) â”€â”€ -->
   <div id="autocomplete-dropdown" class="autocomplete-dropdown"></div>
 
-  <!-- ── TOOLBAR ─────────────────────────────────────────── -->
+  <!-- â”€â”€ TOOLBAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
   <div id="toolbar" class="hidden">
     <!-- Brand -->
     <div class="toolbar-brand">
@@ -117,7 +117,7 @@
     </div>
   </div>
 
-  <!-- ── MOBILE BOTTOM TAB BAR ──────────────────────────── -->
+  <!-- â”€â”€ MOBILE BOTTOM TAB BAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
   <div id="mobile-tabs" style="display:none;">
     <a class="mob-tab mob-nav-tab" href="../pages/dashboard.html">
       <span class="material-symbols-outlined">dashboard</span> ERP
@@ -142,7 +142,7 @@
     </button>
   </div>
 
-  <!-- ── CLIENT CRUD MODAL ────────────────────────────── -->
+  <!-- â”€â”€ CLIENT CRUD MODAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
   <div id="client-modal" class="modal" style="display:none">
     <div class="modal-content" style="position:relative;">
       <span class="close" onclick="closeClientModal()">&#x2715;</span>
@@ -151,7 +151,7 @@
       <input id="modal-client-addr" class="sb-input" placeholder="Address" style="width:100%" />
       <input id="modal-client-phone" class="sb-input" placeholder="Phone (10 digits)" style="width:100%" />
       <input id="modal-client-gstin" class="sb-input" placeholder="GSTIN (15 chars)" style="width:100%;text-transform:uppercase;" />
-      <input id="modal-client-due" class="sb-input" placeholder="Previous Due Amount (₹)" style="width:100%" />
+      <input id="modal-client-due" class="sb-input" placeholder="Previous Due Amount (â‚¹)" style="width:100%" />
       <div style="display:flex;gap:10px;margin-top:8px">
         <button onclick="saveClientModal()"
           style="flex:1;padding:10px;border-radius:8px;border:none;background:var(--primary);color:var(--bg-card);font-weight:700;cursor:pointer;">Save</button>
@@ -161,7 +161,7 @@
     </div>
   </div>
 
-  <!-- ── APP ────────────────────────────────────────────── -->
+  <!-- â”€â”€ APP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
   <div id="app" class="hidden">
 
     <!-- SIDEBAR -->
@@ -175,13 +175,13 @@
         </div>
       </div>
 
-      <!-- ── FIXED INFO BANNER (collapsible) ── -->
+      <!-- â”€â”€ FIXED INFO BANNER (collapsible) â”€â”€ -->
       <div class="sb-fixed-banner" id="fixed-info-banner" onclick="toggleFixedInfo()">
         <div class="sb-fixed-banner-left">
           <span class="material-symbols-outlined" style="font-size:18px;color:var(--primary)">lock</span>
           <div>
             <div class="sb-fixed-banner-title">Fixed Info</div>
-            <div class="sb-fixed-banner-sub">Your Business · Bank Details · Notes</div>
+            <div class="sb-fixed-banner-sub">Your Business Â· Bank Details Â· Notes</div>
           </div>
         </div>
         <span class="material-symbols-outlined sb-fixed-chevron" id="fixed-chevron">expand_more</span>
@@ -274,7 +274,7 @@ Wednesday and Sunday Company Holiday.</textarea>
 
       </div><!-- /fixed-info-block -->
 
-      <!-- ── MASTER RECORDS (Products/Clients Management) ── -->
+      <!-- â”€â”€ MASTER RECORDS (Products/Clients Management) â”€â”€ -->
 
       <div class="sb-fixed-banner" id="master-clients-banner"
         onclick="togglePanel('master-clients-block', 'master-clients-chevron')">
@@ -299,7 +299,7 @@ Wednesday and Sunday Company Holiday.</textarea>
       </div>
 
 
-      <!-- ── INVOICE DETAILS ── -->
+      <!-- â”€â”€ INVOICE DETAILS â”€â”€ -->
       <div class="sb-section">
         <div class="sb-section-title">
           <span class="material-symbols-outlined" style="font-size:14px">receipt_long</span>
@@ -318,7 +318,7 @@ Wednesday and Sunday Company Holiday.</textarea>
         </div>
       </div>
 
-      <!-- ── BILL TO (CLIENT) ── -->
+      <!-- â”€â”€ BILL TO (CLIENT) â”€â”€ -->
       <div class="sb-section">
         <div class="sb-section-title">
           <span class="material-symbols-outlined" style="font-size:14px">person</span>
@@ -339,13 +339,13 @@ Wednesday and Sunday Company Holiday.</textarea>
           </div>
         </div>
         <div style="margin-top:2px;">
-          <span class="sb-label">Previous Due Amount (₹)</span>
+          <span class="sb-label">Previous Due Amount (â‚¹)</span>
           <input class="sb-input" id="s-client-due" type="number" placeholder="0.00" oninput="onDueInput(this)" style="border-color: rgba(239,68,68,0.4); background: rgba(239,68,68,0.03); color: #ef4444; font-weight: 700;" />
           <div style="font-size:10px; color:#94a3b8; margin-top:4px;">Auto-filled from Master Data. Edit or clear if fully paid.</div>
         </div>
       </div>
 
-      <!-- ── ITEMS / PRODUCTS ── -->
+      <!-- â”€â”€ ITEMS / PRODUCTS â”€â”€ -->
       <div class="sb-section" id="sb-items-section">
         <div class="sb-section-title">
           <span class="material-symbols-outlined" style="font-size:14px">inventory_2</span>
@@ -358,7 +358,7 @@ Wednesday and Sunday Company Holiday.</textarea>
         </button>
       </div>
 
-      <!-- ── TAX & CHARGES ── -->
+      <!-- â”€â”€ TAX & CHARGES â”€â”€ -->
       <div class="sb-section">
         <div class="sb-section-title">
           <span class="material-symbols-outlined" style="font-size:14px">percent</span>
@@ -386,7 +386,7 @@ Wednesday and Sunday Company Holiday.</textarea>
 
     </div><!-- /sidebar -->
 
-    <!-- MAIN — A4 paper preview -->
+    <!-- MAIN â€” A4 paper preview -->
     <div id="main">
       <div id="invoice-paper">
 
@@ -404,15 +404,15 @@ Wednesday and Sunday Company Holiday.</textarea>
             <div class="paper-company-name" id="p-company">AgroChem</div>
             <div class="paper-company-sub">
               <span id="p-address">Survey No.207/1, Nr. Balaji Agro, Shapar, Rajkot, Gujarat - 360024</span><br />
-              <span id="p-phone">—</span><span id="p-email-phone-sep"> &nbsp;|&nbsp; </span><span id="p-email">skagro3105@gmail.com</span><br />
+              <span id="p-phone">â€”</span><span id="p-email-phone-sep"> &nbsp;|&nbsp; </span><span id="p-email">skagro3105@gmail.com</span><br />
               GSTIN: <span id="p-gstin">24AERFS1718Q1ZB</span>
             </div>
           </div>
           <div class="paper-invoice-box">
             <div class="invoice-badge">INVOICE</div>
             <div class="paper-meta">
-              Invoice No: <strong id="p-inv-num">—</strong><br />
-              Date: <strong id="p-inv-date">—</strong><br />
+              Invoice No: <strong id="p-inv-num">â€”</strong><br />
+              Date: <strong id="p-inv-date">â€”</strong><br />
               <span id="p-due-line" style="display:none">Due: <strong id="p-due-date"></strong><br /></span>
             </div>
           </div>
@@ -451,7 +451,7 @@ Wednesday and Sunday Company Holiday.</textarea>
               <th>Product Name</th>
               <th>Qty</th>
               <th>Price</th>
-              <th>Total (₹)</th>
+              <th>Total (â‚¹)</th>
             </tr>
           </thead>
           <tbody id="items-tbody"></tbody>
@@ -463,28 +463,28 @@ Wednesday and Sunday Company Holiday.</textarea>
         <div class="totals-wrap" style="margin-top:16px">
           <div class="totals-box">
             <div class="totals-row">
-              <span>Subtotal</span><span id="p-subtotal">₹0.00</span>
+              <span>Subtotal</span><span id="p-subtotal">â‚¹0.00</span>
             </div>
             <div class="totals-row tax-type-row" id="p-taxtype-row" style="display:none;">
               <span id="p-taxtype-label">GST 5%</span><span>&nbsp;</span>
             </div>
             <div class="totals-row tax-detail-row" id="p-cgst-row" style="display:none;">
-              <span id="p-cgst-label">CGST (0%)</span><span id="p-cgst">₹0.00</span>
+              <span id="p-cgst-label">CGST (0%)</span><span id="p-cgst">â‚¹0.00</span>
             </div>
             <div class="totals-row tax-detail-row" id="p-sgst-row" style="display:none;">
-              <span id="p-sgst-label">SGST (0%)</span><span id="p-sgst">₹0.00</span>
+              <span id="p-sgst-label">SGST (0%)</span><span id="p-sgst">â‚¹0.00</span>
             </div>
             <div class="totals-row tax-detail-row" id="p-igst-row" style="display:none;">
-              <span id="p-igst-label">IGST (0%)</span><span id="p-igst">₹0.00</span>
+              <span id="p-igst-label">IGST (0%)</span><span id="p-igst">â‚¹0.00</span>
             </div>
             <div class="totals-row" id="p-totalgst-row" style="display:none;">
-              <span>Total GST</span><span id="p-totalgst">₹0.00</span>
+              <span>Total GST</span><span id="p-totalgst">â‚¹0.00</span>
             </div>
             <div class="totals-row" id="p-due-row" style="display:none;">
-              <span style="color:#ef4444; font-weight:700;">Previous Due</span><span id="p-due-amount" style="color:#ef4444; font-weight:800;">₹0.00</span>
+              <span style="color:#ef4444; font-weight:700;">Previous Due</span><span id="p-due-amount" style="color:#ef4444; font-weight:800;">â‚¹0.00</span>
             </div>
             <div class="totals-grand">
-              <span>GRAND TOTAL</span><span id="p-grand">₹0.00</span>
+              <span>GRAND TOTAL</span><span id="p-grand">â‚¹0.00</span>
             </div>
           </div>
         </div>
@@ -496,10 +496,10 @@ Wednesday and Sunday Company Holiday.</textarea>
         <div class="paper-footer">
           <div class="bank-block" id="bank-block">
             <div class="bank-title">Payment Details</div>
-            <div class="bank-row"><strong>Bank:</strong> <span id="p-bank-name">—</span></div>
-            <div class="bank-row"><strong>A/C No.:</strong> <span id="p-bank-acc">—</span></div>
-            <div class="bank-row"><strong>IFSC:</strong> <span id="p-bank-ifsc">—</span></div>
-            <div class="bank-row"><strong>UPI:</strong> <span id="p-upi">—</span></div>
+            <div class="bank-row"><strong>Bank:</strong> <span id="p-bank-name">â€”</span></div>
+            <div class="bank-row"><strong>A/C No.:</strong> <span id="p-bank-acc">â€”</span></div>
+            <div class="bank-row"><strong>IFSC:</strong> <span id="p-bank-ifsc">â€”</span></div>
+            <div class="bank-row"><strong>UPI:</strong> <span id="p-upi">â€”</span></div>
           </div>
 
           <div class="qr-block" id="qr-block" style="display:none">
@@ -540,7 +540,7 @@ Wednesday and Sunday Company Holiday.</textarea>
       <label style="font-size:12px;color:var(--text-muted);display:block;margin-top:10px;">Packaging / Phone</label>
       <input id="modal-client-phone" class="sb-input" style="width:100%;margin-top:4px;" />
 
-      <label style="font-size:12px;color:var(--text-muted);display:block;margin-top:10px;">Price (₹) / GSTIN</label>
+      <label style="font-size:12px;color:var(--text-muted);display:block;margin-top:10px;">Price (â‚¹) / GSTIN</label>
       <input id="modal-client-gstin" class="sb-input" style="width:100%;margin-top:4px;" />
 
       <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">
