@@ -1,8 +1,8 @@
 /* assets/js/database.js - Supabase Bridge Config */
 
 // Generic fallback values, ideally replaced during build or provided dynamically
-const supabaseUrl = 'https://hfklkatyoqsylkuouxyq.supabase.co';
-const supabaseKey = 'sb_publishable_pnrZY0BcxPa973E_La45Tw_5An9u4_e';
+const supabaseUrl = 'https://uepuzyvdfyylztyecpug.supabase.co';
+const supabaseKey = 'sb_publishable__UaVFmqPrT2UVq_brpCeUQ_p4r63kcz';
 
 // In a non-module environment using the CDN, supabase is available on window.supabase
 if (window.supabase) {
