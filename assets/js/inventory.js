@@ -959,8 +959,8 @@ function openInventoryOptionManager() {
     renderGroupedOptions('box_option', 'box-options-groups', 'editBoxOption', 'deleteMasterOption');
     APP.openModal('box-manager-modal');
   } else if (cat === 'Labels') {
-    renderGroupedOptions('bottle_option', 'bottle-options-groups', 'editBottleOption', 'deleteMasterOption');
-    APP.openModal('bottle-manager-modal');
+    renderGroupedOptions('label_option', 'label-options-groups', 'editLabelOption', 'deleteMasterOption');
+    APP.openModal('label-manager-modal');
   } else {
     APP.showToast('Please select Technical, Bottles, Boxes, or Labels tab to manage options.', 'info');
   }
