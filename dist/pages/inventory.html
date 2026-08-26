@@ -2,18 +2,20 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AgroChem ERP — Inventory</title>
+  <title>S K ERP - Inventory</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link rel="manifest" href="/assets/manifest-dwnBLvH6.json">
+<link rel="manifest" href="/assets/manifest-BAAsRkuR.json?v=2">
   <meta name="theme-color" content="#10B981">
-  <link rel="stylesheet" crossorigin href="/assets/responsive-CHiigqCX.css">
+<link rel="manifest" href="/assets/manifest-BAAsRkuR.json?v=2"><meta name="theme-color" content="#10B981">
+  <link rel="icon" type="image/jpeg" href="/assets/sk-logo-DMxLelH9.jpg">
+  <link rel="stylesheet" crossorigin href="/assets/responsive-DfyqI-PE.css">
   <link rel="stylesheet" crossorigin href="/assets/tables-BwTHrusJ.css">
   <link rel="stylesheet" crossorigin href="/assets/search-select-DHBt09kF.css">
 </head>
 <body>
 <div class="app-layout" id="app-layout">
-  <script src="../assets/js/shared-layout.js?v=58"></script>
+  <script src="../assets/js/shared-layout.js?v=64"></script>
   <script>document.addEventListener('DOMContentLoaded',()=>LAYOUT.injectLayout('Inventory','Inventory'))</script>
 
   <main class="main-content" id="main-content">
@@ -37,6 +39,15 @@
         <div class="table-toolbar">
           <div class="table-toolbar-left">
             <div class="table-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input id="search-input" placeholder="Search inventory…"></div>
+            <select id="tech-filter-select" class="form-select" style="margin-left: 10px; max-width: 200px; padding: 6px 12px; height: 36px; display: none;">
+              <option value="">All Technicals</option>
+              <option value="TECHNICAL">TECHNICAL</option>
+              <option value="PGR">PGR</option>
+              <option value="INSECTICIDE">INSECTICIDE</option>
+              <option value="FUNGICIDE">FUNGICIDE</option>
+              <option value="HERBICIDE">HERBICIDE</option>
+              <option value="SOLVENT">SOLVENT</option>
+            </select>
           </div>
           <div class="table-toolbar-right"><span class="text-sm text-muted" id="total-info">Loading…</span></div>
         </div>
@@ -107,6 +118,17 @@
               <p>Define classification, measuring unit, and item details.</p>
             </div>
             <div class="form-grid product-form-grid">
+              <div class="form-group">
+                <label class="form-label">Type of Technical <span class="required">*</span></label>
+                <select class="form-select" name="item_subtype" id="tech-subtype-select">
+                  <option value="TECHNICAL">TECHNICAL</option>
+                  <option value="PGR">PGR</option>
+                  <option value="INSECTICIDE">INSECTICIDE</option>
+                  <option value="FUNGICIDE">FUNGICIDE</option>
+                  <option value="HERBICIDE">HERBICIDE</option>
+                  <option value="SOLVENT">SOLVENT</option>
+                </select>
+              </div>
               <div class="form-group">
                 <label class="form-label">Unit</label>
                 <select class="form-select" name="unit" id="tech-unit-select">
@@ -537,6 +559,28 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="label-manager-modal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Manage Labels</span><button class="modal-close" onclick="APP.closeModal('label-manager-modal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <form id="label-manager-form" onsubmit="return false">
+        <input type="hidden" id="label-option-id">
+        <div class="form-grid">
+          <div class="form-group"><label class="form-label">Label Type</label><input class="form-input" id="label-type-input" placeholder="e.g. Front Label"></div>
+          <div class="form-group"><label class="form-label">Label Size</label><input class="form-input" id="label-size-input" placeholder="e.g. 1 Ltr"></div>
+        </div>
+        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:16px">
+          <button class="btn btn-secondary" type="button" onclick="resetLabelManagerForm()">Clear</button>
+          <button class="btn btn-primary" type="button" onclick="saveLabelOption()">Save Label Option</button>
+        </div>
+      </form>
+      <div id="label-options-groups" style="margin-top:18px;display:grid;gap:16px">
+        <div class="empty-state"><div class="spinner" style="margin:0 auto"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="box-manager-modal">
   <div class="modal">
     <div class="modal-header"><span class="modal-title">Manage Boxes</span><button class="modal-close" onclick="APP.closeModal('box-manager-modal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
@@ -560,5 +604,5 @@
 </div>
 
 <datalist id="catalog-products-list"></datalist>
-<script src="../assets/js/database.js?v=58"></script><script src="../assets/js/utils.js?v=58"></script><script src="../assets/js/components/search-select.js?v=58"></script><script src="../assets/js/app.js?v=58"></script><script src="../assets/js/inventory.js?v=58"></script>
+<script src="../assets/js/database.js?v=64"></script><script src="../assets/js/utils.js?v=64"></script><script src="../assets/js/components/search-select.js?v=64"></script><script src="../assets/js/app.js?v=64"></script><script src="../assets/js/inventory.js?v=64"></script>
 </body></html>

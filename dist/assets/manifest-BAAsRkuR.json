@@ -1,0 +1,23 @@
+{
+  "name": "S K ERP",
+  "short_name": "S K ERP",
+  "description": "Inventory and business management dashboard for S K Agro Chemical.",
+  "start_url": "./pages/dashboard.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#10B981",
+  "icons": [
+    {
+      "src": "./assets/images/sk-logo.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./assets/images/sk-logo.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}

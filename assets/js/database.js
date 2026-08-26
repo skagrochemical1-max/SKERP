@@ -11,7 +11,7 @@ if (window.supabase) {
   const key = (typeof import_meta !== 'undefined' && import_meta.env) ? import_meta.env.VITE_SUPABASE_PUBLISHABLE_KEY : supabaseKey;
   window.dbClient = window.supabase.createClient(url, key, {
     auth: {
-      storage: window.sessionStorage
+      storage: window.localStorage
     }
   });
 } else {

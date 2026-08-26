@@ -3,21 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AgroChem ERP â€” Dashboard</title>
-  <meta name="description" content="AgroChem ERP: Premium internal inventory and business management dashboard for pesticide manufacturing.">
+  <title>S K ERP - Dashboard</title>
+  <meta name="description" content="S K Agro Chemical: Premium internal inventory and business management dashboard for pesticide manufacturing.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js?v=58" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js?v=64" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link rel="manifest" href="/assets/manifest-dwnBLvH6.json">
+<link rel="manifest" href="/assets/manifest-BAAsRkuR.json?v=2">
   <meta name="theme-color" content="#10B981">
-  <link rel="stylesheet" crossorigin href="/assets/responsive-CHiigqCX.css">
+<link rel="manifest" href="/assets/manifest-BAAsRkuR.json?v=2"><meta name="theme-color" content="#10B981">
+  <link rel="icon" type="image/jpeg" href="/assets/sk-logo-DMxLelH9.jpg">
+  <link rel="stylesheet" crossorigin href="/assets/responsive-DfyqI-PE.css">
   <link rel="stylesheet" crossorigin href="/assets/dashboard-C4Qf09Be.css">
   <link rel="stylesheet" crossorigin href="/assets/tables-BwTHrusJ.css">
 </head>
 <body>
 <div class="app-layout" id="app-layout">
-  <script src="../assets/js/shared-layout.js?v=58"></script>
+  <script src="../assets/js/shared-layout.js?v=64"></script>
   <script>document.addEventListener('DOMContentLoaded',()=>LAYOUT.injectLayout('Dashboard','Dashboard'))</script>
 
   <main class="main-content" id="main-content">
@@ -43,6 +45,36 @@
         </a>
 
       </div>
+      
+      <div class="card" style="margin-bottom: 24px;">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <div class="card-title">Inventory Value</div>
+            <div class="card-subtitle">Total value of inventory stock</div>
+          </div>
+          <div>
+            <select id="dashboard-inventory-filter" class="form-select" style="min-width: 150px; font-weight: 500;">
+              <option value="All">All Inventory</option>
+              <option value="Technical">Technical</option>
+              <option value="Bottles">Bottles</option>
+              <option value="Boxes">Boxes</option>
+              <option value="Labels">Labels</option>
+              <option value="Others">Others</option>
+            </select>
+          </div>
+        </div>
+        <div class="card-body">
+          <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px;">
+            <div>
+              <div class="stat-label" id="dashboard-inventory-selected-type" style="font-weight: 600; margin-bottom: 8px;">Selected Type: All Inventory</div>
+              <div class="stat-value" id="dashboard-inventory-total-value" style="font-size: 32px; color: var(--primary);">Loading...</div>
+            </div>
+          </div>
+          <div id="dashboard-inventory-breakdown" style="display: none; overflow-x: auto;">
+            <!-- Breakdown table dynamically injected -->
+          </div>
+        </div>
+      </div>
 
       <div class="activity-row">
         <div class="card">
@@ -58,9 +90,9 @@
   </main>
 </div>
 
-<script src="../assets/js/database.js?v=58"></script>
-<script src="../assets/js/utils.js?v=58"></script>
-<script src="../assets/js/app.js?v=58"></script>
-<script src="../assets/js/dashboard.js?v=58"></script>
+<script src="../assets/js/database.js?v=64"></script>
+<script src="../assets/js/utils.js?v=64"></script>
+<script src="../assets/js/app.js?v=64"></script>
+<script src="../assets/js/dashboard.js?v=64"></script>
 </body>
 </html>
