@@ -1188,13 +1188,14 @@ function editLabelOption(id) {
   document.getElementById('label-size-input').value = opt.value || '';
 }
 
-async function deleteMasterOption(id, cat) {
-  APP.showConfirm('Delete Option', 'Are you sure you want to delete this option? This cannot be undone.', async () => {
+async function deleteMasterOption(id) {
+  APP.showConfirm('Are you sure you want to delete this option? This cannot be undone.', async () => {
     try {
       const { error } = await window.dbClient.from('master_options').delete().eq('id', id);
       if (error) throw error;
       APP.showToast('Option deleted successfully', 'success');
       
+      const cat = activeTab;
       if (cat === 'Technical') await renderTechnicalUnits();
       if (cat === 'Bottles') await renderGroupedOptions('bottle_option', 'bottle-options-groups', 'editBottleOption', 'deleteMasterOption');
       if (cat === 'Boxes') await renderGroupedOptions('box_option', 'box-options-groups', 'editBoxOption', 'deleteMasterOption');
