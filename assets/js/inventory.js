@@ -235,36 +235,67 @@ async function viewBatches(type, id) {
       el.innerHTML = '<div class="empty-state">No active batches.</div>'; 
     } else { 
       const totalStock = batches.reduce((sum, b) => sum + parseFloat(b.current_qty || 0), 0);
-      el.innerHTML = `
-        <div style="margin-bottom: 14px; font-weight: 600; font-size: 14px; background: rgba(16, 185, 129, 0.08); padding: 10px 14px; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.2); display: flex; justify-content: space-between; align-items: center;">
-          <span>Batch Wise Breakdown</span>
-          <span>Total Available Stock: <strong style="color:var(--accent); font-size: 16px;">${totalStock.toFixed(2)}</strong></span>
-        </div>
-        <div class="line-items-wrap" style="overflow-x:auto;">
-          <table class="data-table" style="width:100%; min-width:480px;">
-            <thead>
-              <tr>
-                <th>Batch No</th>
-                <th>Type / Source</th>
-                <th>Supplier / Ref</th>
-                <th>Date</th>
-                <th>Unit Cost (₹)</th>
-                <th>Remaining Qty</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${batches.map(b => `
+      const isMobile = window.innerWidth <= 768;
+      
+      let tableOrCardContent = '';
+      if (isMobile) {
+        tableOrCardContent = batches.map(b => {
+          const isOpen = b.batch_no && b.batch_no.includes('OPEN');
+          return `
+            <div style="padding: 12px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span class="cell-mono" style="font-weight: 700; font-size: 13.5px; color: var(--text-primary);">${b.batch_no || '—'}</span>
+                <span class="badge ${isOpen ? 'badge-purple' : 'badge-success'}" style="font-size:11px;">${isOpen ? 'Opening Stock' : 'Purchase Batch'}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">
+                <span>Source: ${b.supplier_name || (b.purchase_id ? `Purchase #${b.purchase_id}` : 'Opening Stock Entry')}</span>
+                <span>${b.purchase_date ? UTILS.fmtDate(b.purchase_date) : '—'}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; padding-top: 6px; border-top: 1px dashed var(--border); margin-top: 6px;">
+                <span>Unit Cost: <strong>${UTILS.fmtCurrency(b.purchase_price)}</strong></span>
+                <span style="font-weight: 800; color: var(--accent);">${parseFloat(b.current_qty).toFixed(2)} ${b.unit || ''}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } else {
+        tableOrCardContent = `
+          <div class="line-items-wrap" style="overflow-x:auto;">
+            <table class="data-table" style="width:100%; min-width:480px;">
+              <thead>
                 <tr>
-                  <td class="cell-mono">${b.batch_no || '—'}</td>
-                  <td><span class="badge ${ (b.batch_no && b.batch_no.includes('OPEN')) ? 'badge-purple' : 'badge-success'}">${ (b.batch_no && b.batch_no.includes('OPEN')) ? 'Opening Stock' : 'Purchase Batch'}</span></td>
-                  <td>${b.supplier_name || (b.purchase_id ? `Purchase #${b.purchase_id}` : 'Opening Stock Entry')}</td>
-                  <td>${b.purchase_date ? UTILS.fmtDate(b.purchase_date) : '—'}</td>
-                  <td>${UTILS.fmtCurrency(b.purchase_price)}</td>
-                  <td style="font-weight:700;color:var(--accent)">${parseFloat(b.current_qty).toFixed(2)} ${b.unit || ''}</td>
+                  <th>Batch No</th>
+                  <th>Type / Source</th>
+                  <th>Supplier / Ref</th>
+                  <th>Date</th>
+                  <th>Unit Cost (₹)</th>
+                  <th>Remaining Qty</th>
                 </tr>
-              `).join('')}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                ${batches.map(b => `
+                  <tr>
+                    <td class="cell-mono">${b.batch_no || '—'}</td>
+                    <td><span class="badge ${ (b.batch_no && b.batch_no.includes('OPEN')) ? 'badge-purple' : 'badge-success'}">${ (b.batch_no && b.batch_no.includes('OPEN')) ? 'Opening Stock' : 'Purchase Batch'}</span></td>
+                    <td>${b.supplier_name || (b.purchase_id ? `Purchase #${b.purchase_id}` : 'Opening Stock Entry')}</td>
+                    <td>${b.purchase_date ? UTILS.fmtDate(b.purchase_date) : '—'}</td>
+                    <td>${UTILS.fmtCurrency(b.purchase_price)}</td>
+                    <td style="font-weight:700;color:var(--accent)">${parseFloat(b.current_qty).toFixed(2)} ${b.unit || ''}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+
+      el.innerHTML = `
+        <div style="margin-bottom: 12px; font-weight: 600; font-size: 13.5px; background: rgba(16, 185, 129, 0.08); padding: 10px 12px; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.2); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+          <span>Batch Wise Breakdown</span>
+          <span>Available Stock: <strong style="color:var(--accent); font-size: 15px;">${totalStock.toFixed(2)}</strong></span>
+        </div>
+        <div>
+          ${tableOrCardContent}
         </div>`; 
     }
     APP.openModal('batch-modal');

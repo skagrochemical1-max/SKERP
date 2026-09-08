@@ -275,66 +275,61 @@ async function viewOrder(id) {
     let itemsHtml = (o.items || []).map(it => {
       const pSize = cleanSizeLabel(it.packaging_size || '', '');
       return `
-      <tr>
-        <td style="font-weight:600; vertical-align:middle;">${it.product_name}</td>
-        <td style="vertical-align:middle;"><span class="badge badge-neutral">${pSize || '—'}</span></td>
-        <td style="text-align:center; vertical-align:middle;">${it.quantity}</td>
-        <td style="text-align:right; vertical-align:middle;">${UTILS.fmtCurrency(it.unit_price)}</td>
-        <td style="text-align:right; font-weight:700; vertical-align:middle; color:var(--text);">${UTILS.fmtCurrency(it.total)}</td>
-      </tr>
-    `}).join('');
+        <div style="padding: 10px 12px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 6px;">
+            <span style="font-weight: 700; color: var(--text-primary); font-size: 13.5px; word-break: break-word;">${it.product_name}</span>
+            <span style="font-weight: 800; color: var(--accent); font-size: 13.5px; white-space: nowrap;">${UTILS.fmtCurrency(it.total)}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 12px; color: var(--text-muted);">
+            <div>Pack: <span class="badge badge-neutral" style="font-size:11px; padding:2px 6px;">${pSize || '—'}</span></div>
+            <div>Qty: <strong style="color:var(--text-primary)">${it.quantity}</strong> × ${UTILS.fmtCurrency(it.unit_price)}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
 
     const html = `
-      <div style="display:grid; gap:16px;">
-        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px; border-bottom:1px solid var(--border); padding-bottom:12px;">
+      <div style="display: flex; flex-direction: column; gap: 14px; width: 100%;">
+        <!-- Header Info -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
           <div>
-            <h3 style="margin:0; font-size:18px; font-weight:800; color:var(--text);">${o.order_no}</h3>
-            <p style="margin:4px 0 0; font-size:13px; color:var(--text-muted);">Booked Date: ${UTILS.fmtDate(o.date)} ${o.due_date ? `| Due: ${UTILS.fmtDate(o.due_date)}` : ''}</p>
+            <h3 style="margin: 0; font-size: 18px; font-weight: 800; color: var(--text);">${o.order_no}</h3>
+            <p style="margin: 3px 0 0; font-size: 12px; color: var(--text-muted);">Booked: ${UTILS.fmtDate(o.date)} ${o.due_date ? `| Due: ${UTILS.fmtDate(o.due_date)}` : ''}</p>
           </div>
           <div>${statusBadge}</div>
         </div>
 
-        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:12px; background:var(--bg); padding:14px; border-radius:8px; border:1px solid var(--border);">
-          <div>
-            <span style="font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); font-weight:700;">Client Details</span>
-            <div style="font-weight:700; font-size:15px; margin-top:4px; color:var(--text);">${o.client_name || '—'}</div>
+        <!-- Details Card -->
+        <div style="display: flex; flex-direction: column; gap: 10px; background: var(--bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 4px;">
+            <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); font-weight: 700;">Client Details</span>
+            <span style="font-weight: 700; font-size: 14px; color: var(--text-primary); text-align: right; word-break: break-word;">${o.client_name || '—'}</span>
           </div>
-          <div>
-            <span style="font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); font-weight:700;">Payment Status</span>
-            <div style="font-size:13px; margin-top:4px; color:var(--text); line-height:1.5;">
-              Total: <strong>${UTILS.fmtCurrency(o.total_amount)}</strong> | Paid: <span class="text-success" style="font-weight:600">${UTILS.fmtCurrency(o.paid_amount)}</span>
-              <br>Balance: <span class="${balance > 0 ? 'text-danger' : 'text-success'}" style="font-weight:700">${UTILS.fmtCurrency(balance)}</span>
+          <div style="height: 1px; background: var(--border); width: 100%;"></div>
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 4px;">
+            <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); font-weight: 700;">Payment Summary</span>
+            <div style="text-align: right; font-size: 12.5px; line-height: 1.4;">
+              Total: <strong>${UTILS.fmtCurrency(o.total_amount)}</strong> | Paid: <span class="text-success" style="font-weight: 600;">${UTILS.fmtCurrency(o.paid_amount)}</span>
+              <br>Balance: <span class="${balance > 0 ? 'text-danger' : 'text-success'}" style="font-weight: 700;">${UTILS.fmtCurrency(balance)}</span>
             </div>
           </div>
         </div>
 
+        <!-- Ordered Items Section -->
         <div>
-          <h4 style="margin:0 0 8px; font-size:14px; font-weight:700; color:var(--text);">Ordered Items</h4>
-          <div style="overflow-x:auto; -webkit-overflow-scrolling:touch; border:1px solid var(--border); border-radius:8px;">
-            <table class="data-table" style="width:100%; min-width:440px; margin:0;">
-              <thead>
-                <tr>
-                  <th style="text-align:left">Product Name</th>
-                  <th style="text-align:left">Pack Size</th>
-                  <th style="text-align:center">Quantity</th>
-                  <th style="text-align:right">Unit Price</th>
-                  <th style="text-align:right">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${itemsHtml || '<tr><td colspan="5" style="text-align:center; padding:16px;">No items</td></tr>'}
-              </tbody>
-            </table>
+          <h4 style="margin: 0 0 8px; font-size: 13px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">Ordered Items (${(o.items || []).length})</h4>
+          <div>
+            ${itemsHtml || '<div style="text-align:center; padding:16px; color:var(--text-muted); font-size:13px;">No items</div>'}
           </div>
         </div>
 
         ${o.notes ? `
-          <div style="background:var(--bg); padding:10px 14px; border-radius:6px; font-size:13px; color:var(--text-muted); border:1px solid var(--border);">
-            <strong>Notes:</strong> ${o.notes}
+          <div style="background: var(--bg); padding: 10px 12px; border-radius: 6px; font-size: 12px; color: var(--text-muted); border: 1px solid var(--border);">
+            <strong style="color:var(--text-secondary)">Notes:</strong> ${o.notes}
           </div>
         ` : ''}
 
-        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:8px;">
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px;">
           <button class="btn btn-secondary" onclick="APP.closeModal('view-modal')">Close</button>
           <button class="btn btn-primary" onclick="APP.closeModal('view-modal'); openEdit(${o.id});">Edit Order</button>
         </div>
