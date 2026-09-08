@@ -35,41 +35,46 @@ async function loadDashboard() {
       .limit(5);
     if (recErr) throw recErr;
 
-      const { data: invData, error: invErr } = await window.dbClient.from('inventory_items').select('id, name, unit, reorder_level, stock, category');
-      if (invErr) throw invErr;
+    const { data: invData, error: invErr } = await window.dbClient.from('inventory_items').select('id, name, unit, reorder_level, stock, category, item_subtype');
+    if (invErr) throw invErr;
 
-      const { data: batches } = await window.dbClient.from('stock_batches').select('item_id, current_qty, purchase_price').eq('item_type', 'Inventory');
-      const costMap = {};
-      if (batches) {
-        batches.forEach(b => {
-          if (!costMap[b.item_id]) costMap[b.item_id] = { totalCost: 0, totalQty: 0 };
-          const qty = parseFloat(b.current_qty) || 0;
-          const price = parseFloat(b.purchase_price) || 0;
-          if (qty > 0) {
-            costMap[b.item_id].totalCost += (qty * price);
-            costMap[b.item_id].totalQty += qty;
-          }
-        });
-      }
-      
-      window.dashboardInventoryData = (invData || []).map(p => {
-         const stock = parseFloat(p.stock || 0);
-         let cost = 0;
-         if (costMap[p.id] && costMap[p.id].totalQty > 0) {
-           cost = costMap[p.id].totalCost / costMap[p.id].totalQty;
-         }
-         return { ...p, stock, val: stock * cost };
+    const { data: batches } = await window.dbClient.from('stock_batches').select('item_id, current_qty, purchase_price').eq('item_type', 'Inventory');
+    const costMap = {};
+    if (batches) {
+      batches.forEach(b => {
+        if (!costMap[b.item_id]) costMap[b.item_id] = { totalCost: 0, totalQty: 0 };
+        const qty = parseFloat(b.current_qty) || 0;
+        const price = parseFloat(b.purchase_price) || 0;
+        if (qty > 0) {
+          costMap[b.item_id].totalCost += (qty * price);
+          costMap[b.item_id].totalQty += qty;
+        }
       });
-      
-      const stockAlerts = window.dashboardInventoryData
-        .filter(p => {
-           const threshold = parseFloat(p.reorder_level || 0);
-           return p.stock <= threshold;
-        })
-        .map(p => ({ ...p, type: p.category || 'Item' }))
-        .sort((a, b) => p.stock - b.stock);
+    }
+    
+    window.dashboardInventoryData = (invData || []).map(p => {
+       const stock = parseFloat(p.stock || 0);
+       let cost = 0;
+       if (costMap[p.id] && costMap[p.id].totalQty > 0) {
+         cost = costMap[p.id].totalCost / costMap[p.id].totalQty;
+       }
+       return { ...p, stock, val: stock * cost };
+    });
+    
+    const stockAlerts = window.dashboardInventoryData
+      .filter(p => {
+         const reorder = parseFloat(p.reorder_level || 0);
+         const threshold = reorder > 0 ? reorder : 50;
+         return p.stock <= threshold;
+      })
+      .map(p => ({ 
+         ...p, 
+         type: p.item_subtype || p.category || 'Raw Material',
+         reorder_level: parseFloat(p.reorder_level || 0) > 0 ? parseFloat(p.reorder_level) : 50
+      }))
+      .sort((a, b) => a.stock - b.stock);
 
-      setTimeout(() => renderInventoryValueSection(), 0);
+    setTimeout(() => renderInventoryValueSection(), 0);
 
     const stats = {
       kpis: { revenue, activeOrders: activeOrders || 0 },
@@ -86,8 +91,6 @@ async function loadDashboard() {
     const kpiOrders = document.getElementById('kpi-orders');
     if (kpiOrders) kpiOrders.textContent = kpis.activeOrders || 0;
     
-    
-
     const badge = document.getElementById('pending-badge');
     if (badge) { 
       badge.textContent = kpis.activeOrders || 0; 
@@ -188,12 +191,22 @@ function renderStockAlerts(alerts) {
   
   el.innerHTML = alerts.map(p => {
     const threshold = parseFloat(p.reorder_level || 0);
-    return `<div class="stock-alert-item">
-      <div class="stock-alert-content">
-        <div class="stock-alert-name">${p.name || 'Unknown'} <span class="badge ${p.type === 'Catalog' ? 'badge-purple' : 'badge-info'}" style="font-size: 9px; padding: 2px 6px; margin-left: 4px;">${p.type || 'Item'}</span></div>
-        <div class="stock-alert-meta">${parseFloat(p.stock || 0).toFixed(1)} / ${threshold} ${p.unit || ''}</div>
+    const isOutOfStock = parseFloat(p.stock || 0) === 0;
+    const statusBadge = isOutOfStock
+      ? '<span class="badge badge-gray" style="font-size: 11px;">Out of Stock</span>'
+      : '<span class="badge badge-danger" style="font-size: 11px;">Low</span>';
+
+    return `<div class="stock-alert-item" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border);">
+      <div class="stock-alert-content" style="display: flex; flex-direction: column; gap: 3px;">
+        <div class="stock-alert-name" style="font-weight: 600; font-size: 13.5px; color: var(--text-primary);">
+          ${p.name || 'Unknown'} 
+          <span class="badge badge-purple" style="font-size: 9.5px; padding: 2px 7px; margin-left: 6px; text-transform: uppercase;">${p.type || 'Raw Material'}</span>
+        </div>
+        <div class="stock-alert-meta" style="font-size: 12px; color: var(--text-muted);">
+          ${parseFloat(p.stock || 0).toFixed(2)} / ${threshold} ${p.unit || ''}
+        </div>
       </div>
-      <span class="badge badge-danger">Low</span>
+      <div>${statusBadge}</div>
     </div>`;
   }).join('');
 }
