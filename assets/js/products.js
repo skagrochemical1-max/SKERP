@@ -207,11 +207,14 @@ function updatePageDebug(text, color) {
 let rawInventoryItems = [];
 async function loadTechnicalInventorySuggestions() {
   try {
-    const { data: items, error } = await window.dbClient.from('inventory').select('*');
+    const { data: items, error } = await window.dbClient.from('inventory_items').select('*');
     if (error) throw error;
     rawInventoryItems = items || [];
     technicalInventoryNames = (rawInventoryItems || [])
-      .filter(item => String(item.category || '').trim().toLowerCase() === 'technical')
+      .filter(item => {
+        const cat = String(item.category || '').trim().toLowerCase();
+        return cat === 'technical' || cat === 'others';
+      })
       .map(item => item.name)
       .filter(Boolean);
 
@@ -716,6 +719,15 @@ async function saveProduct() {
     const productPurchasePrice = baseVariant.purchase_price || 0;
     const productSellPrice = baseVariant.sell_price || 0;
 
+    // Find linked inventory raw material if exists by name
+    let matchedInvId = null;
+    const matchedInv = (rawInventoryItems || []).find(it => 
+      String(it.name || '').trim().toLowerCase() === String(d.name || '').trim().toLowerCase()
+    );
+    if (matchedInv) {
+      matchedInvId = matchedInv.id;
+    }
+
     const payload = {
       name: d.name,
       brand: d.brand || '',
@@ -725,7 +737,8 @@ async function saveProduct() {
       purchase_price: productPurchasePrice,
       sell_price: productSellPrice,
       gst: defaultGst,
-      description: d.description || ''
+      description: d.description || '',
+      inventory_item_id: matchedInvId
     };
     if (d.batch_no) {
       payload.batch_no = d.batch_no;

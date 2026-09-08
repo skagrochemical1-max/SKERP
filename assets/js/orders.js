@@ -866,6 +866,32 @@ async function saveOrder() {
         .from('formulations').select('product_id').in('product_id', orderItems.map(item => item.product_id).filter(Boolean));
       if (formulationError) throw formulationError;
       const formulationProductIds = new Set((formulationRows || []).map(row => String(row.product_id)));
+
+      // Fetch latest inventory items for auto-matching fallback
+      const { data: latestInvItems } = await window.dbClient.from('inventory_items').select('id, name, category');
+      const invList = latestInvItems || [];
+
+      for (const item of orderItems) {
+        const product = cachedProductsList.find(p => p.id == item.product_id);
+        if (!product) continue;
+        const hasFormulation = formulationProductIds.has(String(product.id));
+        
+        if (!product.inventory_item_id && !hasFormulation) {
+          // Attempt auto-match by name with inventory_items
+          const match = invList.find(inv => 
+            String(inv.name || '').trim().toLowerCase() === String(product.name || '').trim().toLowerCase()
+          );
+          if (match) {
+            product.inventory_item_id = match.id;
+            item.inventory_item_id = match.id;
+            // Silently persist link to products table so it stays linked in database
+            window.dbClient.from('products').update({ inventory_item_id: match.id }).eq('id', product.id).then(() => {});
+          }
+        } else if (product.inventory_item_id) {
+          item.inventory_item_id = product.inventory_item_id;
+        }
+      }
+
       const unmappedProduct = orderItems.find(item => {
         const product = cachedProductsList.find(p => p.id == item.product_id);
         const hasFormulation = product && formulationProductIds.has(String(product.id));
@@ -873,7 +899,7 @@ async function saveOrder() {
       });
       if (unmappedProduct) {
         const product = cachedProductsList.find(p => p.id == unmappedProduct.product_id);
-        throw new Error(`Inventory mapping not found for ${product?.name || 'selected product'}. Set Linked Inventory Item in Products.`);
+        throw new Error(`Inventory mapping not found for ${product?.name || 'selected product'}. Please make sure an inventory item exists with this name or create a formulation.`);
       }
 
       console.groupCollapsed(`[Sales Order ${finalOrderNo || 'new'}] inventory resolution`);
