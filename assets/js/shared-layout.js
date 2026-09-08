@@ -1,4 +1,4 @@
-﻿/* Injects sidebar + topbar into every page dynamically   */
+/* Injects sidebar + topbar into every page dynamically   */
 (function() {
   localStorage.setItem('sidebar_pinned', 'true');
 
@@ -23,15 +23,15 @@ const SIDEBAR_HTML = `
     <a href="dashboard.html" class="nav-item" data-page="dashboard.html" data-tooltip="Dashboard"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></span><span class="nav-label">Dashboard</span></a>
     
     <div class="nav-section-label">Masters</div>
-    <a href="products.html" class="nav-item" data-page="products.html" data-tooltip="Products"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></span><span class="nav-label">Product Master</span></a>
-    <a href="inventory.html" class="nav-item" data-page="inventory.html" data-tooltip="Inventory"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg></span><span class="nav-label">Inventory Items</span></a>
-    <a href="clients.html" class="nav-item" data-page="clients.html" data-tooltip="Clients"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span class="nav-label">Clients / Farmers</span></a>
+    <a href="products.html" class="nav-item" data-page="products.html" data-tooltip="Products"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></span><span class="nav-label">Products</span></a>
+    <a href="inventory.html" class="nav-item" data-page="inventory.html" data-tooltip="Inventory"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg></span><span class="nav-label">Inventory</span></a>
+    <a href="clients.html" class="nav-item" data-page="clients.html" data-tooltip="Clients"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span class="nav-label">Clients</span></a>
     <a href="suppliers.html" class="nav-item" data-page="suppliers.html" data-tooltip="Suppliers"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></span><span class="nav-label">Suppliers</span></a>
 
     <div class="nav-section-label">Transactions</div>
-    <a href="purchases.html" class="nav-item" data-page="purchases.html" data-tooltip="Purchases"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg></span><span class="nav-label">Purchase Entry</span></a>
-    <a href="orders.html" class="nav-item" data-page="orders.html" data-tooltip="Sales Orders"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg></span><span class="nav-label">Sales Orders</span></a>
-    <a href="formulations.html" class="nav-item" data-page="formulations.html" data-tooltip="Formulations"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg></span><span class="nav-label">Formulations (React)</span></a>
+    <a href="purchases.html" class="nav-item" data-page="purchases.html" data-tooltip="Purchases"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg></span><span class="nav-label">Purchases</span></a>
+    <a href="orders.html" class="nav-item" data-page="orders.html" data-tooltip="Orders"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg></span><span class="nav-label">Orders</span></a>
+    <a href="formulations.html" class="nav-item" data-page="formulations.html" data-tooltip="Formulations"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg></span><span class="nav-label">Formulations</span></a>
     <a href="production.html" class="nav-item" data-page="production.html" data-tooltip="Production"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span><span class="nav-label">Production</span></a>
     <a href="daily-transactions.html" class="nav-item" data-page="daily-transactions.html" data-tooltip="Daily Stock Usage"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg></span><span class="nav-label">Daily Stock Usage</span></a>
 
@@ -147,7 +147,7 @@ const BOTTOM_NAV_HTML = `
 <nav class="mobile-bottom-nav">
   <a href="dashboard.html" class="bottom-nav-item" data-bottom-page="dashboard.html">
     <span class="bottom-nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></span>
-    <span class="bottom-nav-label">Home</span>
+    <span class="bottom-nav-label">Dashboard</span>
   </a>
   <a href="products.html" class="bottom-nav-item" data-bottom-page="products.html">
     <span class="bottom-nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></span>
@@ -155,7 +155,7 @@ const BOTTOM_NAV_HTML = `
   </a>
   <a href="inventory.html" class="bottom-nav-item" data-bottom-page="inventory.html">
     <span class="bottom-nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg></span>
-    <span class="bottom-nav-label">Stock</span>
+    <span class="bottom-nav-label">Inventory</span>
   </a>
   <a href="orders.html" class="bottom-nav-item" data-bottom-page="orders.html">
     <span class="bottom-nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg></span>
@@ -163,7 +163,7 @@ const BOTTOM_NAV_HTML = `
   </a>
   <button type="button" class="bottom-nav-item" onclick="toggleSidebar()">
     <span class="bottom-nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><rect x="14" y="14" width="6" height="6" rx="1.5"/></svg></span>
-    <span class="bottom-nav-label">Pages</span>
+    <span class="bottom-nav-label">More</span>
   </button>
 </nav>
 `;

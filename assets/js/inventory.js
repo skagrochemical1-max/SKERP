@@ -228,7 +228,7 @@ async function viewBatches(type, id) {
   if (!el) return;
   
   try {
-    const { data: batches, error } = await window.dbClient.from('inventory_batches').select('*').eq('inventory_id', id);
+    const { data: batches, error } = await window.dbClient.from('stock_batches').select('*').eq('item_id', id).eq('item_type', 'Inventory').order('id', { ascending: true });
     if (error) throw error;
     
     if (!batches || !batches.length) { 
@@ -240,30 +240,32 @@ async function viewBatches(type, id) {
           <span>Batch Wise Breakdown</span>
           <span>Total Available Stock: <strong style="color:var(--accent); font-size: 16px;">${totalStock.toFixed(2)}</strong></span>
         </div>
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Batch No</th>
-              <th>Type / Source</th>
-              <th>Supplier / Ref</th>
-              <th>Date</th>
-              <th>Unit Cost (₹)</th>
-              <th>Remaining Qty</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${batches.map(b => `
+        <div class="line-items-wrap" style="overflow-x:auto;">
+          <table class="data-table" style="width:100%; min-width:480px;">
+            <thead>
               <tr>
-                <td class="cell-mono">${b.batch_no || '—'}</td>
-                <td><span class="badge ${ (b.batch_no && b.batch_no.includes('OPEN')) ? 'badge-purple' : 'badge-success'}">${ (b.batch_no && b.batch_no.includes('OPEN')) ? 'Opening Stock' : 'Purchase Batch'}</span></td>
-                <td>${b.supplier_name || (b.purchase_id ? `Purchase #${b.purchase_id}` : 'Opening Stock Entry')}</td>
-                <td>${b.purchase_date ? UTILS.fmtDate(b.purchase_date) : '—'}</td>
-                <td>${UTILS.fmtCurrency(b.purchase_price)}</td>
-                <td style="font-weight:700;color:var(--accent)">${parseFloat(b.current_qty).toFixed(2)} ${b.unit || ''}</td>
+                <th>Batch No</th>
+                <th>Type / Source</th>
+                <th>Supplier / Ref</th>
+                <th>Date</th>
+                <th>Unit Cost (₹)</th>
+                <th>Remaining Qty</th>
               </tr>
-            `).join('')}
-          </tbody>
-        </table>`; 
+            </thead>
+            <tbody>
+              ${batches.map(b => `
+                <tr>
+                  <td class="cell-mono">${b.batch_no || '—'}</td>
+                  <td><span class="badge ${ (b.batch_no && b.batch_no.includes('OPEN')) ? 'badge-purple' : 'badge-success'}">${ (b.batch_no && b.batch_no.includes('OPEN')) ? 'Opening Stock' : 'Purchase Batch'}</span></td>
+                  <td>${b.supplier_name || (b.purchase_id ? `Purchase #${b.purchase_id}` : 'Opening Stock Entry')}</td>
+                  <td>${b.purchase_date ? UTILS.fmtDate(b.purchase_date) : '—'}</td>
+                  <td>${UTILS.fmtCurrency(b.purchase_price)}</td>
+                  <td style="font-weight:700;color:var(--accent)">${parseFloat(b.current_qty).toFixed(2)} ${b.unit || ''}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>`; 
     }
     APP.openModal('batch-modal');
   } catch (err) {

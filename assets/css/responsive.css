@@ -1177,6 +1177,20 @@ body { overflow-x: hidden; }
     overflow: hidden !important;
   }
 
+  .modal-body {
+    padding: 16px 14px !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .modal-header {
+    padding: 14px 16px !important;
+  }
+
+  .modal-footer {
+    padding: 12px 16px !important;
+  }
+
   /* Horizontal Scrolling Touch-Chips for Product Categories */
   .cat-pill-filters {
     display: grid !important;
