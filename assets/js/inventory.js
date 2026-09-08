@@ -242,16 +242,16 @@ async function viewBatches(type, id) {
         tableOrCardContent = batches.map(b => {
           const isOpen = b.batch_no && b.batch_no.includes('OPEN');
           return `
-            <div style="padding: 12px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                <span class="cell-mono" style="font-weight: 700; font-size: 13.5px; color: var(--text-primary);">${b.batch_no || '—'}</span>
+            <div style="padding: 10px 12px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; width: 100%; box-sizing: border-box;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 4px;">
+                <span class="cell-mono" style="font-weight: 700; font-size: 13.5px; color: var(--text-primary); word-break: break-all;">${b.batch_no || '—'}</span>
                 <span class="badge ${isOpen ? 'badge-purple' : 'badge-success'}" style="font-size:11px;">${isOpen ? 'Opening Stock' : 'Purchase Batch'}</span>
               </div>
-              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">
-                <span>Source: ${b.supplier_name || (b.purchase_id ? `Purchase #${b.purchase_id}` : 'Opening Stock Entry')}</span>
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-muted); margin-bottom: 4px; flex-wrap: wrap; gap: 4px;">
+                <span style="word-break: break-word;">Source: ${b.supplier_name || (b.purchase_id ? `Purchase #${b.purchase_id}` : 'Opening Stock Entry')}</span>
                 <span>${b.purchase_date ? UTILS.fmtDate(b.purchase_date) : '—'}</span>
               </div>
-              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; padding-top: 6px; border-top: 1px dashed var(--border); margin-top: 6px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12.5px; padding-top: 6px; border-top: 1px dashed var(--border); margin-top: 6px; flex-wrap: wrap; gap: 4px;">
                 <span>Unit Cost: <strong>${UTILS.fmtCurrency(b.purchase_price)}</strong></span>
                 <span style="font-weight: 800; color: var(--accent);">${parseFloat(b.current_qty).toFixed(2)} ${b.unit || ''}</span>
               </div>
