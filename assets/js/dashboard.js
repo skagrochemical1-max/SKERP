@@ -63,15 +63,20 @@ async function loadDashboard() {
     
     const stockAlerts = window.dashboardInventoryData
       .filter(p => {
+         const isTech = String(p.category || p.item_subtype || '').trim().toLowerCase() === 'technical';
          const reorder = parseFloat(p.reorder_level || 0);
-         const threshold = reorder > 0 ? reorder : 50;
+         const threshold = reorder > 0 ? reorder : (isTech ? 7 : 50);
          return p.stock <= threshold;
       })
-      .map(p => ({ 
-         ...p, 
-         type: p.item_subtype || p.category || 'Raw Material',
-         reorder_level: parseFloat(p.reorder_level || 0) > 0 ? parseFloat(p.reorder_level) : 50
-      }))
+      .map(p => {
+         const isTech = String(p.category || p.item_subtype || '').trim().toLowerCase() === 'technical';
+         const reorder = parseFloat(p.reorder_level || 0);
+         return { 
+           ...p, 
+           type: p.item_subtype || p.category || 'Raw Material',
+           reorder_level: reorder > 0 ? reorder : (isTech ? 7 : 50)
+         };
+      })
       .sort((a, b) => a.stock - b.stock);
 
     setTimeout(() => renderInventoryValueSection(), 0);

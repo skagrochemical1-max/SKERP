@@ -26,14 +26,61 @@ async function initPackagingUnits() {
   }
 }
 
+function syncCatalogUnits() {
+  let modified = false;
+  if (!packagingUnits['Litre']) {
+    packagingUnits['Litre'] = ['1 Litre', '500 Ml', '250 Ml', '100 Ml', '50 Ml'];
+    modified = true;
+  }
+  if (!packagingUnits['Kg']) {
+    packagingUnits['Kg'] = ['1 Kg', '500 Gram', '250 Gram', '100 Gram'];
+    modified = true;
+  }
+
+  // Scan all products and all packaging options to automatically include all existing units & sizes
+  (allProducts || []).forEach(p => {
+    if (p.unit && !packagingUnits[p.unit]) {
+      packagingUnits[p.unit] = [];
+      modified = true;
+    }
+  });
+
+  (allPackagingOptions || []).forEach(pkg => {
+    if (pkg.packaging_size) {
+      const prod = (allProducts || []).find(p => p.id === pkg.product_id);
+      const unit = prod?.unit || 'Litre';
+      if (!packagingUnits[unit]) {
+        packagingUnits[unit] = [];
+        modified = true;
+      }
+      if (!packagingUnits[unit].includes(pkg.packaging_size)) {
+        packagingUnits[unit].push(pkg.packaging_size);
+        modified = true;
+      }
+    }
+  });
+
+  if (modified) {
+    savePackagingUnits();
+  }
+}
+
 function savePackagingUnits() {
-  localStorage.setItem('packagingUnits', JSON.stringify(packagingUnits));
+  try {
+    localStorage.setItem('packagingUnits', JSON.stringify(packagingUnits));
+  } catch (e) {
+    console.warn('Failed to save packagingUnits to localStorage', e);
+  }
 }
 
 function updateUnitSelect() {
   const select = document.getElementById('product-unit-select');
   if (!select) return;
   const currentValue = select.value;
+  const unitKeys = Object.keys(packagingUnits);
+  if (!unitKeys.length) {
+    packagingUnits['Litre'] = ['1 Litre', '500 Ml', '250 Ml', '100 Ml', '50 Ml'];
+  }
   select.innerHTML = Object.keys(packagingUnits).map(unit => 
     `<option value="${unit}" ${unit === currentValue ? 'selected' : ''}>${unit}</option>`
   ).join('');
@@ -42,21 +89,143 @@ function updateUnitSelect() {
   }
 }
 
+let editingUnitName = null;
+
 function renderUnitManager() {
   const list = document.getElementById('product-unit-pill-list');
   if (!list) return;
-  const currentValue = document.getElementById('product-unit-select')?.value || '';
+  const currentSelectedUnit = document.getElementById('product-unit-select')?.value || '';
   const units = Object.keys(packagingUnits);
+  
   if (!units.length) {
-    list.innerHTML = '<div style="color: var(--text-muted);">No units added yet. Use the form below to add one.</div>';
+    list.innerHTML = '<div style="color: var(--text-muted); font-size: 13px;">No units registered. Add a unit below.</div>';
     return;
   }
-  list.innerHTML = units.map(unit => `
-    <span style="display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border:1px solid var(--border); border-radius:999px; background:${unit === currentValue ? 'var(--surface)' : 'var(--bg)'}; color:${unit === currentValue ? 'var(--text)' : 'var(--text)'}; cursor:pointer;" onclick="setSelectedUnit(${JSON.stringify(unit)})">
-      <span>${unit}</span>
-      <button type="button" data-unit=${JSON.stringify(unit)} onclick="deleteUnit(event)" style="border:none; background:transparent; color: var(--danger); font-weight:700; cursor:pointer; padding:0;">×</button>
-    </span>
-  `).join('');
+
+  list.innerHTML = `
+    <div style="display: flex; flex-direction: column; gap: 12px; width: 100%;">
+      ${units.map(unit => {
+        const sizes = packagingUnits[unit] || [];
+        const isSelected = unit === currentSelectedUnit;
+        const isEditingThis = editingUnitName === unit;
+
+        if (isEditingThis) {
+          return `
+            <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid var(--accent); border-radius: 8px; padding: 12px; display: grid; gap: 10px;">
+              <div style="font-weight: 700; font-size: 13px; color: var(--accent);">Edit Unit: ${unit}</div>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <input class="form-input" id="edit-unit-name-input" value="${unit}" placeholder="Unit Name" style="flex: 1; min-width: 140px; font-size: 13px;">
+                <input class="form-input" id="edit-unit-sizes-input" value="${sizes.join(', ')}" placeholder="Sizes (comma separated e.g. 1 Ltr, 5 Ltr)" style="flex: 2; min-width: 200px; font-size: 13px;">
+              </div>
+              <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                <button type="button" class="btn btn-sm btn-secondary" onclick="cancelEditUnit()">Cancel</button>
+                <button type="button" class="btn btn-sm btn-primary" onclick="saveEditedUnit('${unit}')">Save Changes</button>
+              </div>
+            </div>
+          `;
+        }
+
+        return `
+          <div style="background: ${isSelected ? 'rgba(16, 185, 129, 0.06)' : 'rgba(255, 255, 255, 0.02)'}; border: 1px solid ${isSelected ? 'var(--accent)' : 'var(--border)'}; border-radius: 8px; padding: 12px; display: grid; gap: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+              <div style="display: flex; align-items: center; gap: 8px; cursor: pointer;" onclick="setSelectedUnit(${JSON.stringify(unit)})">
+                <span style="font-weight: 700; font-size: 14px; color: var(--text-primary);">${unit}</span>
+                ${isSelected ? '<span class="badge badge-success" style="font-size: 10px; padding: 2px 6px;">Active</span>' : ''}
+              </div>
+              <div style="display: flex; gap: 6px; align-items: center;">
+                <button type="button" class="btn btn-sm btn-secondary" style="font-size: 11px; padding: 3px 8px; height: auto;" onclick="startEditUnit('${unit}')" title="Edit Unit & Sizes">Edit</button>
+                <button type="button" class="btn btn-sm" style="background: rgba(239, 68, 68, 0.15); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3); font-size: 11px; padding: 3px 8px; height: auto; border-radius: 4px; cursor: pointer;" onclick="deleteUnit('${unit}')" title="Delete Unit">Delete</button>
+              </div>
+            </div>
+            
+            <div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 2px;">
+              <span style="font-size: 11px; color: var(--text-muted); font-weight: 600; margin-right: 2px;">Sizes:</span>
+              ${sizes.length ? sizes.map(size => `
+                <span style="display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 6px; background: var(--surface); border: 1px solid var(--border); font-size: 12px; color: var(--text);">
+                  <span>${size}</span>
+                  <button type="button" onclick="deleteSizeFromUnit('${unit}', ${JSON.stringify(size)})" style="border: none; background: transparent; color: var(--danger); font-weight: 700; cursor: pointer; padding: 0; font-size: 13px; line-height: 1;" title="Remove this size">×</button>
+                </span>
+              `).join('') : '<span style="font-size: 12px; color: var(--text-muted); font-style: italic;">No predefined sizes</span>'}
+            </div>
+
+            <div style="display: flex; gap: 6px; align-items: center; margin-top: 4px;">
+              <input class="form-input" id="quick-add-size-${unit}" placeholder="Add packaging size (e.g. 5 Ltr)" style="font-size: 12px; padding: 4px 8px; flex: 1; max-width: 240px;" onkeydown="if(event.key==='Enter'){event.preventDefault();quickAddSizeToUnit('${unit}');}">
+              <button type="button" class="btn btn-sm btn-secondary" style="font-size: 11px; padding: 4px 10px; height: auto;" onclick="quickAddSizeToUnit('${unit}')">+ Add Size</button>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function startEditUnit(unit) {
+  editingUnitName = unit;
+  renderUnitManager();
+}
+
+function cancelEditUnit() {
+  editingUnitName = null;
+  renderUnitManager();
+}
+
+function saveEditedUnit(oldUnit) {
+  const newName = document.getElementById('edit-unit-name-input')?.value?.trim();
+  const sizesRaw = document.getElementById('edit-unit-sizes-input')?.value || '';
+  if (!newName) {
+    APP.showToast('Unit name cannot be empty', 'warning');
+    return;
+  }
+  const sizes = sizesRaw.split(',').map(s => s.trim()).filter(Boolean);
+  
+  if (newName !== oldUnit && packagingUnits[newName]) {
+    APP.showToast(`Unit '${newName}' already exists`, 'warning');
+    return;
+  }
+
+  delete packagingUnits[oldUnit];
+  packagingUnits[newName] = sizes;
+  editingUnitName = null;
+  savePackagingUnits();
+  updateUnitSelect();
+  
+  const select = document.getElementById('product-unit-select');
+  if (select) {
+    select.value = newName;
+  }
+  
+  renderUnitManager();
+  renderPackagingOptionsContainer();
+  APP.showToast('Unit updated successfully!', 'success');
+}
+
+function quickAddSizeToUnit(unit) {
+  const input = document.getElementById(`quick-add-size-${unit}`);
+  const val = input?.value?.trim();
+  if (!val) {
+    APP.showToast('Please enter a packaging size', 'warning');
+    return;
+  }
+  if (!packagingUnits[unit]) packagingUnits[unit] = [];
+  if (packagingUnits[unit].includes(val)) {
+    APP.showToast('This size is already in the list', 'info');
+    return;
+  }
+  packagingUnits[unit].push(val);
+  savePackagingUnits();
+  renderUnitManager();
+  renderPackagingOptionsContainer();
+  if (input) input.value = '';
+  APP.showToast(`Added '${val}' to ${unit}`, 'success');
+}
+
+function deleteSizeFromUnit(unit, size) {
+  if (!packagingUnits[unit]) return;
+  packagingUnits[unit] = packagingUnits[unit].filter(s => s !== size);
+  savePackagingUnits();
+  renderUnitManager();
+  renderPackagingOptionsContainer();
+  APP.showToast(`Removed size '${size}'`, 'info');
 }
 
 function setSelectedUnit(unit) {
@@ -72,23 +241,29 @@ function toggleUnitManager() {
   const showing = panel.style.display !== 'none';
   panel.style.display = showing ? 'none' : 'grid';
   if (!showing) {
+    editingUnitName = null;
     renderUnitManager();
   }
 }
 
-function deleteUnit(event) {
-  event.stopPropagation();
-  const unit = event.currentTarget.dataset.unit;
+function deleteUnit(unit) {
   if (!unit || !packagingUnits[unit]) return;
-  delete packagingUnits[unit];
-  savePackagingUnits();
-  updateUnitSelect();
-  const select = document.getElementById('product-unit-select');
-  if (select && select.value === unit) {
-    select.value = select.options.length ? select.options[0].value : '';
+  const totalUnits = Object.keys(packagingUnits).length;
+  if (totalUnits <= 1) {
+    APP.showToast('You must keep at least one unit', 'warning');
+    return;
   }
-  onUnitChange();
-  APP.showToast('Unit removed', 'success');
+  APP.showConfirm(`Delete unit '${unit}' and its predefined sizes? Existing product data will remain unchanged.`, () => {
+    delete packagingUnits[unit];
+    savePackagingUnits();
+    updateUnitSelect();
+    const select = document.getElementById('product-unit-select');
+    if (select && select.value === unit) {
+      select.value = select.options.length ? select.options[0].value : '';
+    }
+    onUnitChange();
+    APP.showToast('Unit removed', 'success');
+  });
 }
 
 function addNewUnitFromInput() {
@@ -99,11 +274,27 @@ function addNewUnitFromInput() {
     APP.showToast('Enter a unit name', 'warning');
     return;
   }
+  const sizes = sizesEl?.value?.split(',').map(s => s.trim()).filter(Boolean) || [];
+  
   if (packagingUnits[unitName]) {
-    APP.showToast('Unit already exists', 'warning');
+    // Merge new sizes into existing unit
+    let addedCount = 0;
+    sizes.forEach(s => {
+      if (!packagingUnits[unitName].includes(s)) {
+        packagingUnits[unitName].push(s);
+        addedCount++;
+      }
+    });
+    savePackagingUnits();
+    updateUnitSelect();
+    renderUnitManager();
+    renderPackagingOptionsContainer();
+    if (nameEl) nameEl.value = '';
+    if (sizesEl) sizesEl.value = '';
+    APP.showToast(`Updated existing unit '${unitName}' with ${addedCount} new sizes`, 'success');
     return;
   }
-  const sizes = sizesEl?.value?.split(',').map(s => s.trim()).filter(Boolean) || [];
+
   packagingUnits[unitName] = sizes;
   savePackagingUnits();
   updateUnitSelect();
@@ -115,7 +306,7 @@ function addNewUnitFromInput() {
   }
   if (nameEl) nameEl.value = '';
   if (sizesEl) sizesEl.value = '';
-  APP.showToast('Unit added', 'success');
+  APP.showToast('Unit added successfully', 'success');
 }
 
 function onUnitChange() {
@@ -125,33 +316,19 @@ function onUnitChange() {
     currentPackagingOptions.forEach(opt => {
       if (opt.packaging_size) {
         const val = opt.packaging_size.toLowerCase();
+        // Intelligent conversion between Litre and Kg if direct match exists
         if (newUnit === 'Kg') {
-          if (val.includes('1 ltr') || val.includes('1 l')) opt.packaging_size = '1 kg';
-          else if (val.includes('500 ml')) opt.packaging_size = '500 gm';
-          else if (val.includes('250 ml')) opt.packaging_size = '250 gm';
-          else if (val.includes('100 ml')) opt.packaging_size = '100 gm';
-          else {
-            const available = packagingUnits[newUnit] || [];
-            if (!available.includes(opt.packaging_size)) {
-              opt.packaging_size = '';
-            }
-          }
+          if (val === '1 ltr' || val === '1 litre' || val === '1 l') opt.packaging_size = '1 Kg';
+          else if (val === '500 ml') opt.packaging_size = '500 Gram';
+          else if (val === '250 ml') opt.packaging_size = '250 Gram';
+          else if (val === '100 ml') opt.packaging_size = '100 Gram';
+          // Preserve existing packaging_size even if not converted
         } else if (newUnit === 'Litre') {
-          if (val.includes('1 kg') || val.includes('1 k')) opt.packaging_size = '1 Ltr';
-          else if (val.includes('500 gm') || val.includes('500 g')) opt.packaging_size = '500 ml';
-          else if (val.includes('250 gm') || val.includes('250 g')) opt.packaging_size = '250 ml';
-          else if (val.includes('100 gm') || val.includes('100 g')) opt.packaging_size = '100 ml';
-          else {
-            const available = packagingUnits[newUnit] || [];
-            if (!available.includes(opt.packaging_size)) {
-              opt.packaging_size = '';
-            }
-          }
-        } else {
-          const available = packagingUnits[newUnit] || [];
-          if (!available.includes(opt.packaging_size)) {
-            opt.packaging_size = '';
-          }
+          if (val === '1 kg' || val === '1 k') opt.packaging_size = '1 Litre';
+          else if (val === '500 gram' || val === '500 gm' || val === '500 g') opt.packaging_size = '500 Ml';
+          else if (val === '250 gram' || val === '250 gm' || val === '250 g') opt.packaging_size = '250 Ml';
+          else if (val === '100 gram' || val === '100 gm' || val === '100 g') opt.packaging_size = '100 Ml';
+          // Preserve existing packaging_size even if not converted
         }
       }
     });
@@ -162,10 +339,32 @@ function onUnitChange() {
 
 function onPackagingSizeChange(idx, value) {
   if (value === 'custom') {
+    currentPackagingOptions[idx].is_custom = true;
     currentPackagingOptions[idx].packaging_size = '';
     renderPackagingOptionsContainer();
   } else {
+    currentPackagingOptions[idx].is_custom = false;
     currentPackagingOptions[idx].packaging_size = value;
+  }
+}
+
+function saveCustomSizeAsPreset(idx) {
+  const opt = currentPackagingOptions[idx];
+  const size = opt?.packaging_size?.trim();
+  const unit = document.getElementById('product-unit-select')?.value || 'Litre';
+  if (!size) {
+    APP.showToast('Enter a packaging size first', 'warning');
+    return;
+  }
+  if (!packagingUnits[unit]) packagingUnits[unit] = [];
+  if (!packagingUnits[unit].includes(size)) {
+    packagingUnits[unit].push(size);
+    savePackagingUnits();
+    renderUnitManager();
+    renderPackagingOptionsContainer();
+    APP.showToast(`Saved '${size}' as preset for ${unit}!`, 'success');
+  } else {
+    APP.showToast(`'${size}' is already in presets`, 'info');
   }
 }
 
@@ -249,6 +448,8 @@ async function loadProducts() {
     if (packError) throw packError;
     allPackagingOptions = allPackagingOptionsData || [];
 
+    syncCatalogUnits();
+    updateUnitSelect();
     renderProductsTable(allProducts);
     renderPackagingTable(allPackagingOptions);
     updatePageDebug('Ready (' + allProducts.length + ')', '#10B981');
@@ -620,6 +821,8 @@ function renderPackagingOptionsContainer() {
   if (window.innerWidth <= 1024) {
     container.innerHTML = currentPackagingOptions.map((opt, idx) => {
       const isBase = Boolean(opt.is_base);
+      const isCustomSize = opt.is_custom || (opt.packaging_size && !availableSizes.includes(opt.packaging_size));
+
       return `<div class="packaging-card" style="border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 12px; background: ${isBase ? 'rgba(16, 185, 129, 0.08)' : 'rgba(255,255,255,0.01)'}; display: grid; gap: 10px; position: relative;">
           <div class="packaging-card-head" style="display:flex; justify-content:space-between; align-items:center;">
             <span style="font-weight:700; font-size:12px; color:var(--text-secondary);">Variant #${idx + 1}</span>
@@ -634,10 +837,14 @@ function renderPackagingOptionsContainer() {
               <select class="form-select" onchange="onPackagingSizeChange(${idx}, this.value)" style="font-size: 13px; padding: 8px 12px; width: 100%;">
                 <option value="">Select size...</option>
                 ${availableSizes.map(size => `<option value="${size}" ${opt.packaging_size === size ? 'selected' : ''}>${size}</option>`).join('')}
-                <option value="custom">Custom size...</option>
+                ${(opt.packaging_size && !availableSizes.includes(opt.packaging_size)) ? `<option value="${opt.packaging_size}" selected>${opt.packaging_size} (Custom)</option>` : ''}
+                <option value="custom" ${isCustomSize && !opt.packaging_size ? 'selected' : ''}>Custom size...</option>
               </select>
-              ${opt.packaging_size && !availableSizes.includes(opt.packaging_size) ? 
-                `<input type="text" class="form-input" value="${opt.packaging_size}" onchange="currentPackagingOptions[${idx}].packaging_size = this.value" style="font-size: 13px; padding: 8px 12px; margin-top: 6px; width: 100%;" placeholder="Enter custom size">` : ''}
+              ${isCustomSize ? 
+                `<div style="display:flex; gap:6px; margin-top:6px;">
+                  <input type="text" class="form-input" value="${opt.packaging_size || ''}" oninput="currentPackagingOptions[${idx}].packaging_size = this.value" style="font-size: 13px; padding: 6px 10px; flex: 1;" placeholder="Enter size e.g. 5 Ltr">
+                  <button type="button" class="btn btn-sm btn-secondary" onclick="saveCustomSizeAsPreset(${idx})" title="Save to preset list for this unit" style="font-size:11px; white-space:nowrap;">+ Preset</button>
+                </div>` : ''}
             </div>
             <div>
               <label style="font-size:11px; color:var(--text-muted); font-weight:600; display:block; margin-bottom:4px;">Purchase Price (₹)</label>
@@ -658,29 +865,37 @@ function renderPackagingOptionsContainer() {
         <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
           <thead>
             <tr style="background: var(--bg);">
-              <th style="padding: 8px 12px; text-align: left; font-size: 11px; font-weight: 700; color: var(--text-secondary); border-bottom: 1px solid var(--border);">Base</th>
+              <th style="padding: 8px 12px; text-align: left; font-size: 11px; font-weight: 700; color: var(--text-secondary); border-bottom: 1px solid var(--border); width: 80px;">Base</th>
               <th style="padding: 8px 12px; text-align: left; font-size: 11px; font-weight: 700; color: var(--text-secondary); border-bottom: 1px solid var(--border);">Packaging Size</th>
-              <th style="padding: 8px 12px; text-align: left; font-size: 11px; font-weight: 700; color: var(--text-secondary); border-bottom: 1px solid var(--border);">Purchase Price (₹)</th>
-              <th style="padding: 8px 12px; text-align: left; font-size: 11px; font-weight: 700; color: var(--text-secondary); border-bottom: 1px solid var(--border);">Selling Price (₹)</th>
-              <th style="padding: 8px 12px; text-align: left; font-size: 11px; font-weight: 700; color: var(--text-secondary); border-bottom: 1px solid var(--border);">Actions</th>
+              <th style="padding: 8px 12px; text-align: left; font-size: 11px; font-weight: 700; color: var(--text-secondary); border-bottom: 1px solid var(--border); width: 140px;">Purchase Price (₹)</th>
+              <th style="padding: 8px 12px; text-align: left; font-size: 11px; font-weight: 700; color: var(--text-secondary); border-bottom: 1px solid var(--border); width: 140px;">Selling Price (₹)</th>
+              <th style="padding: 8px 12px; text-align: left; font-size: 11px; font-weight: 700; color: var(--text-secondary); border-bottom: 1px solid var(--border); width: 80px;">Actions</th>
             </tr>
           </thead>
           <tbody>
             ${currentPackagingOptions.map((opt, idx) => {
               const isBase = Boolean(opt.is_base);
+              const isCustomSize = opt.is_custom || (opt.packaging_size && !availableSizes.includes(opt.packaging_size));
+
               return `
                 <tr style="border-bottom: 1px solid var(--border); background:${isBase ? 'rgba(16, 185, 129, 0.08)' : 'transparent'};">
                   <td style="padding: 8px 12px; vertical-align: middle;">
                     ${isBase ? '<span style="display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius:999px; background:var(--success-muted); color:var(--success); font-size:12px;">Base</span>' : `<button type="button" class="btn btn-sm btn-secondary" style="font-size:12px; padding:4px 10px;" onclick="setBaseVariant(${idx})">Set base</button>`}
                   </td>
                   <td style="padding: 8px 12px;">
-                    <select class="form-select" onchange="onPackagingSizeChange(${idx}, this.value)" style="font-size: 12px; padding: 6px 8px; width: 100%;">
-                      <option value="">Select size...</option>
-                      ${availableSizes.map(size => `<option value="${size}" ${opt.packaging_size === size ? 'selected' : ''}>${size}</option>`).join('')}
-                      <option value="custom">Custom size...</option>
-                    </select>
-                    ${opt.packaging_size && !availableSizes.includes(opt.packaging_size) ? 
-                      `<input type="text" class="form-input" value="${opt.packaging_size}" onchange="currentPackagingOptions[${idx}].packaging_size = this.value" style="font-size: 12px; padding: 6px 8px; margin-top: 4px; width: 100%;" placeholder="Enter custom size">` : ''}
+                    <div style="display:flex; gap:6px; align-items:center;">
+                      <select class="form-select" onchange="onPackagingSizeChange(${idx}, this.value)" style="font-size: 12px; padding: 6px 8px; flex:1;">
+                        <option value="">Select size...</option>
+                        ${availableSizes.map(size => `<option value="${size}" ${opt.packaging_size === size ? 'selected' : ''}>${size}</option>`).join('')}
+                        ${(opt.packaging_size && !availableSizes.includes(opt.packaging_size)) ? `<option value="${opt.packaging_size}" selected>${opt.packaging_size} (Custom)</option>` : ''}
+                        <option value="custom" ${isCustomSize && !opt.packaging_size ? 'selected' : ''}>Custom size...</option>
+                      </select>
+                    </div>
+                    ${isCustomSize ? 
+                      `<div style="display:flex; gap:6px; margin-top:4px;">
+                        <input type="text" class="form-input" value="${opt.packaging_size || ''}" oninput="currentPackagingOptions[${idx}].packaging_size = this.value" style="font-size: 12px; padding: 4px 8px; flex: 1;" placeholder="Enter size e.g. 5 Ltr">
+                        <button type="button" class="btn btn-sm btn-secondary" onclick="saveCustomSizeAsPreset(${idx})" title="Save to preset list for this unit" style="font-size:11px; padding:2px 8px; height:auto; white-space:nowrap;">+ Preset</button>
+                      </div>` : ''}
                   </td>
                   <td style="padding: 8px 12px;">
                     <input type="number" class="form-input" placeholder="0.00" value="${opt.purchase_price || 0}" step="0.01" 

@@ -168,16 +168,22 @@
                   <option value="IGST18">IGST 18%</option>
                 </select>
               </div>
-              <div class="form-group form-col-full" style="margin-top: 10px; display:none;" id="product-unit-manager">
-                <label class="form-label">Manage Units</label>
-                <div id="product-unit-panel" style="display: grid; gap: 10px;">
-                  <div id="product-unit-pill-list" style="display:flex; flex-wrap:wrap; gap:8px; padding:6px 0;"></div>
-                  <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                    <input class="form-input" id="new-unit-name" placeholder="New unit name e.g. Gram" style="flex:1; min-width:160px;">
-                    <input class="form-input" id="new-unit-sizes" placeholder="Default sizes, comma-separated" style="flex:2; min-width:200px;">
-                    <button type="button" class="btn btn-secondary" onclick="addNewUnitFromInput()">Add unit</button>
+              <div class="form-group form-col-full" style="margin-top: 10px; display:none; background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 8px; padding: 16px;" id="product-unit-manager">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
+                  <h5 style="margin:0; font-size:14px; font-weight:700; color:var(--text-primary);">Units & Packaging Sizes Manager</h5>
+                  <button type="button" class="btn btn-sm btn-ghost" onclick="toggleUnitManager()" style="padding:2px 8px; font-size:12px;">Close</button>
+                </div>
+                <div id="product-unit-panel" style="display: grid; gap: 14px;">
+                  <div id="product-unit-pill-list" style="display:flex; flex-direction:column; gap:10px; width:100%;"></div>
+                  <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px; display:grid; gap:8px;">
+                    <div style="font-weight:700; font-size:12px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.04em;">Add New Unit Preset</div>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                      <input class="form-input" id="new-unit-name" placeholder="Unit name e.g. Bottle / Pouch / Gram" style="flex:1; min-width:160px; font-size:13px;">
+                      <input class="form-input" id="new-unit-sizes" placeholder="Preset sizes, comma-separated (e.g. 1 Ltr, 5 Ltr)" style="flex:2; min-width:200px; font-size:13px;" onkeydown="if(event.key==='Enter'){event.preventDefault();addNewUnitFromInput();}">
+                      <button type="button" class="btn btn-primary" onclick="addNewUnitFromInput()" style="font-size:13px;">+ Add Unit</button>
+                    </div>
                   </div>
-                  <div class="text-sm text-muted">Units are managed separately. Use this panel only when you want to add or remove a unit.</div>
+                  <div class="text-sm text-muted" style="font-size:12px;">Manage preset sizes for each unit. Any custom sizes you add are preserved and can also be saved as presets.</div>
                 </div>
               </div>
             </div>

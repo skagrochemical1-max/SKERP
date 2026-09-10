@@ -1,7 +1,21 @@
-self.addEventListener('install', (e) => {
-  console.log('[Service Worker] Install');
+// S K ERP Service Worker for PWA Installation & Caching
+const CACHE_NAME = 'sk-erp-v1';
+
+self.addEventListener('install', (event) => {
+  console.log('[Service Worker] Installed');
+  self.skipWaiting();
 });
 
-self.addEventListener('fetch', (e) => {
-  // Allow normal network requests (we don't strictly need offline caching for this PWA shortcut feature)
+self.addEventListener('activate', (event) => {
+  console.log('[Service Worker] Activated');
+  event.waitUntil(self.clients.claim());
+});
+
+self.addEventListener('fetch', (event) => {
+  // Pass through fetch requests
+  event.respondWith(
+    fetch(event.request).catch(() => {
+      return caches.match(event.request);
+    })
+  );
 });

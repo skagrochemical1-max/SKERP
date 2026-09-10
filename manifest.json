@@ -1,23 +1,50 @@
 {
-  "name": "S K ERP",
+  "id": "/",
+  "name": "S K ERP - Pesticide Management",
   "short_name": "S K ERP",
-  "description": "Inventory and business management dashboard for S K Agro Chemical.",
+  "description": "Inventory, Formulation and Business Management System for S K Agro Chemical.",
   "start_url": "./pages/dashboard.html",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#ffffff",
+  "orientation": "any",
+  "background_color": "#0f172a",
   "theme_color": "#10B981",
   "icons": [
+    {
+      "src": "./assets/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./assets/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "./assets/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./assets/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
     {
       "src": "./assets/images/sk-logo.jpg",
       "sizes": "192x192",
       "type": "image/jpeg",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "./assets/images/sk-logo.jpg",
       "sizes": "512x512",
       "type": "image/jpeg",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }

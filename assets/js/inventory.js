@@ -181,7 +181,9 @@ function renderTable(data) {
     return;
   }
   tbody.innerHTML = filtered.map(it => {
-    const isLow = it.total_stock < 50 || (it.reorder_level > 0 && it.total_stock <= it.reorder_level);
+    const isTech = String(it.category || it.item_subtype || '').trim().toLowerCase() === 'technical';
+    const threshold = (it.reorder_level > 0) ? it.reorder_level : (isTech ? 7 : 50);
+    const isLow = it.total_stock <= threshold;
     const statusBadge = it.total_stock === 0 
       ? '<span class="badge badge-gray">Out of Stock</span>'
       : (isLow 
