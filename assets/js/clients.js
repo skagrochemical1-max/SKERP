@@ -22,7 +22,7 @@ async function loadClients() {
     console.log('Clients: Loading clients from backend API...');
     const { data: clientsData, error } = await window.dbClient.from('clients').select('*');
     if (error) throw error;
-    allClients = clientsData || [];
+    allClients = (clientsData || []).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     
     filterAndRender();
     

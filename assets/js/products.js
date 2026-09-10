@@ -5,6 +5,7 @@ let technicalInventoryNames = [];
 let productFormStep = 1;
 let activeProductTab = 'Products';
 let packagingUnits = {};
+let deletedPackagingUnits = [];
 
 async function initPackagingUnits() {
   try {
@@ -24,22 +25,28 @@ async function initPackagingUnits() {
       'Kg': ['1 Kg', '500 Gram', '250 Gram', '100 Gram']
     };
   }
+
+  try {
+    deletedPackagingUnits = JSON.parse(localStorage.getItem('deletedPackagingUnits') || '[]');
+  } catch (e) {
+    deletedPackagingUnits = [];
+  }
 }
 
 function syncCatalogUnits() {
   let modified = false;
-  if (!packagingUnits['Litre']) {
+  if (!packagingUnits['Litre'] && !deletedPackagingUnits.includes('Litre')) {
     packagingUnits['Litre'] = ['1 Litre', '500 Ml', '250 Ml', '100 Ml', '50 Ml'];
     modified = true;
   }
-  if (!packagingUnits['Kg']) {
+  if (!packagingUnits['Kg'] && !deletedPackagingUnits.includes('Kg')) {
     packagingUnits['Kg'] = ['1 Kg', '500 Gram', '250 Gram', '100 Gram'];
     modified = true;
   }
 
-  // Scan all products and all packaging options to automatically include all existing units & sizes
+  // Scan all products and all packaging options to automatically include non-deleted units & sizes
   (allProducts || []).forEach(p => {
-    if (p.unit && !packagingUnits[p.unit]) {
+    if (p.unit && !packagingUnits[p.unit] && !deletedPackagingUnits.includes(p.unit)) {
       packagingUnits[p.unit] = [];
       modified = true;
     }
@@ -49,6 +56,7 @@ function syncCatalogUnits() {
     if (pkg.packaging_size) {
       const prod = (allProducts || []).find(p => p.id === pkg.product_id);
       const unit = prod?.unit || 'Litre';
+      if (deletedPackagingUnits.includes(unit)) return;
       if (!packagingUnits[unit]) {
         packagingUnits[unit] = [];
         modified = true;
@@ -185,6 +193,11 @@ function saveEditedUnit(oldUnit) {
 
   delete packagingUnits[oldUnit];
   packagingUnits[newName] = sizes;
+  
+  // Ensure newName is not marked as deleted
+  deletedPackagingUnits = deletedPackagingUnits.filter(u => u !== newName);
+  localStorage.setItem('deletedPackagingUnits', JSON.stringify(deletedPackagingUnits));
+
   editingUnitName = null;
   savePackagingUnits();
   updateUnitSelect();
@@ -246,23 +259,45 @@ function toggleUnitManager() {
   }
 }
 
-function deleteUnit(unit) {
+async function deleteUnit(unit) {
   if (!unit || !packagingUnits[unit]) return;
   const totalUnits = Object.keys(packagingUnits).length;
   if (totalUnits <= 1) {
     APP.showToast('You must keep at least one unit', 'warning');
     return;
   }
-  APP.showConfirm(`Delete unit '${unit}' and its predefined sizes? Existing product data will remain unchanged.`, () => {
+  APP.showConfirm(`Delete unit '${unit}' and its predefined sizes?`, async () => {
     delete packagingUnits[unit];
+    if (!deletedPackagingUnits.includes(unit)) {
+      deletedPackagingUnits.push(unit);
+      localStorage.setItem('deletedPackagingUnits', JSON.stringify(deletedPackagingUnits));
+    }
     savePackagingUnits();
+
+    const remainingUnits = Object.keys(packagingUnits);
+    const targetUnit = remainingUnits[0] || 'Litre';
+
+    // Migrate any existing products with this unit to remaining target unit in database
+    const affected = (allProducts || []).filter(p => p.unit === unit);
+    if (affected.length > 0) {
+      try {
+        await window.dbClient.from('products').update({ unit: targetUnit }).eq('unit', unit);
+        allProducts.forEach(p => {
+          if (p.unit === unit) p.unit = targetUnit;
+        });
+      } catch (e) {
+        console.warn('Database batch update for deleted unit failed:', e);
+      }
+    }
+
     updateUnitSelect();
     const select = document.getElementById('product-unit-select');
     if (select && select.value === unit) {
-      select.value = select.options.length ? select.options[0].value : '';
+      select.value = targetUnit;
     }
     onUnitChange();
-    APP.showToast('Unit removed', 'success');
+    renderUnitManager();
+    APP.showToast(`Unit '${unit}' deleted successfully`, 'success');
   });
 }
 
@@ -276,6 +311,10 @@ function addNewUnitFromInput() {
   }
   const sizes = sizesEl?.value?.split(',').map(s => s.trim()).filter(Boolean) || [];
   
+  // Unmark from deleted list
+  deletedPackagingUnits = deletedPackagingUnits.filter(u => u !== unitName);
+  localStorage.setItem('deletedPackagingUnits', JSON.stringify(deletedPackagingUnits));
+
   if (packagingUnits[unitName]) {
     // Merge new sizes into existing unit
     let addedCount = 0;

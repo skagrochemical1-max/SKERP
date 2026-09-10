@@ -53,7 +53,10 @@ function renderLowStockAlerts() {
     .filter(item => {
       const stock = getLocalItemStock(item.id);
       const ro = parseFloat(item.reorder_level) || 0;
-      return stock < 50 || (ro > 0 && stock <= ro);
+      const itemType = String(item.item_subtype || item.category || 'Raw Material').trim();
+      const isTech = itemType.toLowerCase() === 'technical';
+      const threshold = ro > 0 ? ro : (isTech ? 7 : 50);
+      return stock <= threshold;
     })
     .slice(0, 3);
 

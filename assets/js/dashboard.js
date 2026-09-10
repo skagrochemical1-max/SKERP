@@ -63,17 +63,19 @@ async function loadDashboard() {
     
     const stockAlerts = window.dashboardInventoryData
       .filter(p => {
-         const isTech = String(p.category || p.item_subtype || '').trim().toLowerCase() === 'technical';
+         const itemType = String(p.item_subtype || p.category || 'Raw Material').trim();
+         const isTech = itemType.toLowerCase() === 'technical';
          const reorder = parseFloat(p.reorder_level || 0);
          const threshold = reorder > 0 ? reorder : (isTech ? 7 : 50);
          return p.stock <= threshold;
       })
       .map(p => {
-         const isTech = String(p.category || p.item_subtype || '').trim().toLowerCase() === 'technical';
+         const itemType = String(p.item_subtype || p.category || 'Raw Material').trim();
+         const isTech = itemType.toLowerCase() === 'technical';
          const reorder = parseFloat(p.reorder_level || 0);
          return { 
            ...p, 
-           type: p.item_subtype || p.category || 'Raw Material',
+           type: itemType,
            reorder_level: reorder > 0 ? reorder : (isTech ? 7 : 50)
          };
       })
@@ -169,14 +171,13 @@ function renderRecentActivities(activities) {
   if (!el) return;
   
   if (!activities || activities.length === 0) { 
-    el.innerHTML = '<p class="text-muted text-sm">No orders yet.</p>'; 
+    el.innerHTML = '<p class="text-muted text-sm">No recent orders.</p>'; 
     return; 
   }
   
   el.innerHTML = activities.map(o => {
-    return `<div class="activity-item">
-      <div class="activity-dot ${o.status === 'Delivered' ? 'green' : 'yellow'}"></div>
-      <div class="activity-text">
+    return `<div class="recent-order-item" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border);">
+      <div class="recent-order-info" style="font-size: 13.5px; color: var(--text-primary);">
         <strong>${o.order_no || 'N/A'}</strong> - ${o.client_name || 'Guest'}
         <p>${UTILS.fmtDate(o.date)} • ${UTILS.fmtCurrency(o.total_amount)}</p>
       </div>
@@ -195,7 +196,6 @@ function renderStockAlerts(alerts) {
   }
   
   el.innerHTML = alerts.map(p => {
-    const threshold = parseFloat(p.reorder_level || 0);
     const isOutOfStock = parseFloat(p.stock || 0) === 0;
     const statusBadge = isOutOfStock
       ? '<span class="badge badge-gray" style="font-size: 11px;">Out of Stock</span>'
@@ -207,8 +207,8 @@ function renderStockAlerts(alerts) {
           ${p.name || 'Unknown'} 
           <span class="badge badge-purple" style="font-size: 9.5px; padding: 2px 7px; margin-left: 6px; text-transform: uppercase;">${p.type || 'Raw Material'}</span>
         </div>
-        <div class="stock-alert-meta" style="font-size: 12px; color: var(--text-muted);">
-          ${parseFloat(p.stock || 0).toFixed(2)} / ${threshold} ${p.unit || ''}
+        <div class="stock-alert-meta" style="font-size: 12px; color: var(--text-muted); font-weight: 500;">
+          ${parseFloat(p.stock || 0).toFixed(2)} ${p.unit || ''}
         </div>
       </div>
       <div>${statusBadge}</div>

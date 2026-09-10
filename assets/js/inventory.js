@@ -59,6 +59,7 @@ async function loadInventory() {
       };
     });
 
+    allInventory.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     renderTable(allInventory);
     updatePageDebug('Ready (' + allInventory.length + ')', '#10B981');
   } catch (err) {
@@ -175,13 +176,15 @@ function renderTable(data) {
   const tbody = document.querySelector('#inventory-table tbody');
   if (!tbody) return;
   const filtered = filterData(data);
+  filtered.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   document.getElementById('total-info').textContent = `${filtered.length} item${filtered.length !== 1 ? 's' : ''}`;
   if (!filtered.length) {
     tbody.innerHTML = `<tr class="empty-row"><td colspan="9"><div class="empty-state"><h3>No items found</h3></div></td></tr>`;
     return;
   }
   tbody.innerHTML = filtered.map(it => {
-    const isTech = String(it.category || it.item_subtype || '').trim().toLowerCase() === 'technical';
+    const itemType = String(it.item_subtype || it.category || 'Raw Material').trim();
+    const isTech = itemType.toLowerCase() === 'technical';
     const threshold = (it.reorder_level > 0) ? it.reorder_level : (isTech ? 7 : 50);
     const isLow = it.total_stock <= threshold;
     const statusBadge = it.total_stock === 0 
@@ -193,7 +196,7 @@ function renderTable(data) {
     return `<tr>
       <td><input type="checkbox" class="row-check" value="${it.id}"></td>
       <td class="cell-bold"><div style="display:flex;flex-direction:column"><span>${it.name}</span><span style="font-size:10px;color:var(--text-muted)">RAW MATERIAL</span></div></td>
-      <td><span class="badge badge-purple">${it.item_subtype || it.category || '—'}</span></td>
+      <td><span class="badge badge-purple">${itemType || '—'}</span></td>
       <td style="font-weight:700;color:var(--accent)">${it.total_stock.toFixed(2)}</td>
       <td style="font-weight:600;">${it.unit || 'Nos'}</td>
       <td>${UTILS.fmtCurrency(it.avg_cost)}</td>

@@ -22,7 +22,7 @@ async function loadSuppliers() {
     console.log('Suppliers: Loading suppliers from backend API...');
     const { data: suppliersData, error } = await window.dbClient.from('suppliers').select('*');
     if (error) throw error;
-    allSuppliers = suppliersData || [];
+    allSuppliers = (suppliersData || []).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     
     renderTable(allSuppliers);
     
