@@ -140,6 +140,7 @@ function filterAndRender() {
         itemsText.includes(q);
     });
   }
+  filtered = [...filtered].sort((a, b) => (a.purchase_no || '').localeCompare(b.purchase_no || '', undefined, { numeric: true, sensitivity: 'base' }));
   renderTable(filtered);
 }
 

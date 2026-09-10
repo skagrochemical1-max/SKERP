@@ -84,7 +84,7 @@
               batch_no: f.batch_no || '',
               ingredients: fIngs
             };
-          });
+          }).sort((a, b) => (a.product_name || '').localeCompare(b.product_name || '', undefined, { sensitivity: 'base' }));
           return jsonResponse(result);
         }
 

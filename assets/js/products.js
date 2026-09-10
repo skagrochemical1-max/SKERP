@@ -409,29 +409,14 @@ function saveCustomSizeAsPreset(idx) {
 
 function getFilteredProducts(data) {
   const query = (document.getElementById('search-input')?.value || '').trim().toLowerCase();
-  const activePill = document.querySelector('#cat-pill-filters .cat-pill.active');
-  const category = activePill ? (activePill.dataset.cat || '') : '';
-  const normalize = value => (value || '').toString().trim().toLowerCase();
-  const categoryAliases = {
-    insecticides: ['insecticide', 'insecticides'],
-    fungicides: ['fungicide', 'fungicides'],
-    herbicides: ['herbicide', 'herbicides'],
-    pgr: ['pgr']
-  };
-  const selectedCategory = normalize(category);
-  const selectedCategoryMatches = selectedCategory
-    ? (categoryAliases[selectedCategory] || [selectedCategory])
-    : [];
-
-  return data.filter(p => {
-    if (selectedCategory) {
-      const productCategory = normalize(p.category);
-      if (!selectedCategoryMatches.includes(productCategory)) return false;
-    }
-    if (!query) return true;
-    const haystack = `${p.name} ${p.batch_no || ''} ${p.brand || ''} ${p.category || ''} ${p.composition || ''} ${p.description || ''}`.toLowerCase();
-    return haystack.includes(query);
-  });
+  let list = data || [];
+  if (query) {
+    list = list.filter(p => {
+      const haystack = `${p.name || ''} ${p.batch_no || ''} ${p.brand || ''} ${p.category || ''} ${p.composition || ''} ${p.description || ''}`.toLowerCase();
+      return haystack.includes(query);
+    });
+  }
+  return [...list].sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' }));
 }
 
 function updatePageDebug(text, color) {
@@ -480,7 +465,7 @@ async function loadProducts() {
     // Fetch products
     const { data: allProductsData, error: prodError } = await window.dbClient.from('products').select('*');
     if (prodError) throw prodError;
-    allProducts = allProductsData || [];
+    allProducts = (allProductsData || []).sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' }));
     
     // Fetch packaging options
     const { data: allPackagingOptionsData, error: packError } = await window.dbClient.from('product_packaging').select('*');
@@ -552,7 +537,7 @@ function renderPackagingTable(data) {
     groupMap[pkg.product_id].variants.push(pkg);
   });
 
-  const groups = Object.values(groupMap);
+  const groups = Object.values(groupMap).sort((a, b) => (a.product?.name || '').localeCompare(b.product?.name || '', undefined, { sensitivity: 'base' }));
   const totalVariants = groups.reduce((s, g) => s + g.variants.length, 0);
   document.getElementById('packaging-total-info').textContent =
     `${groups.length} product${groups.length !== 1 ? 's' : ''} · ${totalVariants} variant${totalVariants !== 1 ? 's' : ''}`;
@@ -1121,14 +1106,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   goToProductStep(1);
-
-  document.querySelectorAll('#cat-pill-filters .cat-pill').forEach(pill => {
-    pill.addEventListener('click', () => {
-      document.querySelectorAll('#cat-pill-filters .cat-pill').forEach(p => p.classList.remove('active'));
-      pill.classList.add('active');
-      renderProductsTable(allProducts);
-    });
-  });
 
   document.getElementById('search-input')?.addEventListener('input', () => renderProductsTable(allProducts));
   document.getElementById('packaging-search-input')?.addEventListener('input', () => renderPackagingTable(allPackagingOptions));

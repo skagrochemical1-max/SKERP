@@ -251,7 +251,7 @@ function filterTransactions(data) {
     }
 
     return true;
-  });
+  }).sort((a, b) => (a.txn_no || '').localeCompare(b.txn_no || '', undefined, { numeric: true, sensitivity: 'base' }));
 }
 
 function updateStats(data) {

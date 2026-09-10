@@ -53,6 +53,7 @@ function filterAndRender() {
   if (type) {
     filtered = filtered.filter(c => c.type === type);
   }
+  filtered = [...filtered].sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' }));
   renderTable(filtered);
 }
 

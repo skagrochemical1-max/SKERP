@@ -78,6 +78,7 @@ function filterAndRender() {
       (s.city || '').toLowerCase().includes(q)
     );
   }
+  filtered = [...filtered].sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' }));
   renderTable(filtered);
 }
 

@@ -24,7 +24,7 @@ async function loadData() {
       .order('date', { ascending: false });
       
     if (error) throw error;
-    allProductions = prodBatches || [];
+    allProductions = (prodBatches || []).sort((a, b) => (a.batch_no || '').localeCompare(b.batch_no || '', undefined, { numeric: true, sensitivity: 'base' }));
     
     populateProductSelect();
     renderTable(allProductions);
