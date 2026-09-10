@@ -409,14 +409,31 @@ function saveCustomSizeAsPreset(idx) {
 
 function getFilteredProducts(data) {
   const query = (document.getElementById('search-input')?.value || '').trim().toLowerCase();
-  let list = data || [];
-  if (query) {
-    list = list.filter(p => {
-      const haystack = `${p.name || ''} ${p.batch_no || ''} ${p.brand || ''} ${p.category || ''} ${p.composition || ''} ${p.description || ''}`.toLowerCase();
-      return haystack.includes(query);
-    });
-  }
-  return [...list].sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' }));
+  const activePill = document.querySelector('#cat-pill-filters .cat-pill.active');
+  const category = activePill ? (activePill.dataset.cat || '') : '';
+  const normalize = value => (value || '').toString().trim().toLowerCase();
+  const categoryAliases = {
+    insecticides: ['insecticide', 'insecticides'],
+    fungicides: ['fungicide', 'fungicides'],
+    herbicides: ['herbicide', 'herbicides'],
+    pgr: ['pgr']
+  };
+  const selectedCategory = normalize(category);
+  const selectedCategoryMatches = selectedCategory
+    ? (categoryAliases[selectedCategory] || [selectedCategory])
+    : [];
+
+  let list = (data || []).filter(p => {
+    if (selectedCategory) {
+      const productCategory = normalize(p.category);
+      if (!selectedCategoryMatches.includes(productCategory)) return false;
+    }
+    if (!query) return true;
+    const haystack = `${p.name || ''} ${p.batch_no || ''} ${p.brand || ''} ${p.category || ''} ${p.composition || ''} ${p.description || ''}`.toLowerCase();
+    return haystack.includes(query);
+  });
+
+  return list.sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' }));
 }
 
 function updatePageDebug(text, color) {
@@ -1106,6 +1123,14 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   goToProductStep(1);
+  
+  document.querySelectorAll('#cat-pill-filters .cat-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      document.querySelectorAll('#cat-pill-filters .cat-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      renderProductsTable(allProducts);
+    });
+  });
 
   document.getElementById('search-input')?.addEventListener('input', () => renderProductsTable(allProducts));
   document.getElementById('packaging-search-input')?.addEventListener('input', () => renderPackagingTable(allPackagingOptions));

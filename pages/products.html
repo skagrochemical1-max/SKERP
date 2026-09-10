@@ -35,6 +35,13 @@
         <div class="table-toolbar">
           <div class="table-toolbar-left">
             <div class="table-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input id="search-input" type="search" placeholder="Search products, batch, brand, category…"></div>
+            <div class="table-filters cat-pill-filters" id="cat-pill-filters">
+              <button type="button" class="cat-pill active" data-cat="">All</button>
+              <button type="button" class="cat-pill" data-cat="Insecticides">Insecticides</button>
+              <button type="button" class="cat-pill" data-cat="Fungicides">Fungicides</button>
+              <button type="button" class="cat-pill" data-cat="Herbicides">Herbicides</button>
+              <button type="button" class="cat-pill" data-cat="PGR">PGR</button>
+            </div>
           </div>
           <div class="table-toolbar-right"><span class="text-sm text-muted" id="total-info">Loading…</span></div>
         </div>
