@@ -861,14 +861,26 @@ async function saveOrder() {
         }
       });
 
-      const { data: formulationRows, error: formulationError } = await window.dbClient
-        .from('formulations').select('product_id').in('product_id', orderItems.map(item => item.product_id).filter(Boolean));
-      if (formulationError) throw formulationError;
-      const formulationProductIds = new Set((formulationRows || []).map(row => String(row.product_id)));
+      let formulationProductIds = new Set();
+      try {
+        const prodIds = orderItems.map(item => item.product_id).filter(Boolean);
+        if (prodIds.length > 0) {
+          const { data: formulationRows } = await window.dbClient
+            .from('formulations').select('product_id').in('product_id', prodIds);
+          formulationProductIds = new Set((formulationRows || []).map(row => String(row.product_id)));
+        }
+      } catch (fErr) {
+        console.warn('Formulation lookup notice:', fErr);
+      }
 
       // Fetch latest inventory items for auto-matching fallback
-      const { data: latestInvItems } = await window.dbClient.from('inventory_items').select('id, name, category');
-      const invList = latestInvItems || [];
+      let invList = [];
+      try {
+        const { data: latestInvItems } = await window.dbClient.from('inventory_items').select('id, name, category');
+        invList = latestInvItems || [];
+      } catch (invErr) {
+        console.warn('Inventory lookup notice:', invErr);
+      }
 
       for (const item of orderItems) {
         const product = cachedProductsList.find(p => p.id == item.product_id);
@@ -889,16 +901,6 @@ async function saveOrder() {
         } else if (product.inventory_item_id) {
           item.inventory_item_id = product.inventory_item_id;
         }
-      }
-
-      const unmappedProduct = orderItems.find(item => {
-        const product = cachedProductsList.find(p => p.id == item.product_id);
-        const hasFormulation = product && formulationProductIds.has(String(product.id));
-        return !item.product_id || !product || (!product.inventory_item_id && !hasFormulation);
-      });
-      if (unmappedProduct) {
-        const product = cachedProductsList.find(p => p.id == unmappedProduct.product_id);
-        throw new Error(`Inventory mapping not found for ${product?.name || 'selected product'}. Please make sure an inventory item exists with this name or create a formulation.`);
       }
 
       console.groupCollapsed(`[Sales Order ${finalOrderNo || 'new'}] inventory resolution`);
