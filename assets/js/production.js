@@ -44,10 +44,18 @@ function updatePageDebug(text, color) {
 function populateProductSelect() {
   const select = document.getElementById('product-select');
   if (!select) return;
-  if (select._ussInstance) select._ussInstance.destroy();
+  // Destroy existing instance first
+  if (select._ussInstance) {
+    select._ussInstance.destroy();
+  }
+  // Remove uss-initialized flag so it can be re-initialized
+  delete select.dataset.ussInitialized;
   select.innerHTML = '<option value="">Select Product...</option>' + 
     cachedProducts.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
-  if (window.UniversalSearchSelect) new UniversalSearchSelect(select);
+  if (window.UniversalSearchSelect) {
+    new UniversalSearchSelect(select);
+    select.dataset.ussInitialized = 'true';
+  }
 }
 
 function renderTable(data) {
@@ -84,10 +92,14 @@ function openProductionModal() {
   document.getElementById('production-form').reset();
   document.querySelector('[name="date"]').value = UTILS.todayStr();
   
+  // Reset product select value — do NOT destroy/recreate USS here, it was already set up by populateProductSelect()
   const select = document.getElementById('product-select');
-  if (select._ussInstance) select._ussInstance.destroy();
-  select.value = "";
-  if (window.UniversalSearchSelect) new UniversalSearchSelect(select);
+  select.value = '';
+  // Also clear the USS search input text
+  if (select._ussInstance && select._ussInstance.input) {
+    select._ussInstance.input.value = '';
+    select._ussInstance.filteredData = [...(select._ussInstance.data || [])];
+  }
   
   currentLines = [];
   addIngredientRow();
@@ -101,9 +113,12 @@ async function editProduction(id) {
   editingProductionId = id;
   UTILS.populateForm('production-form', b);
   
+  // Update product-select value without destroying/recreating USS
   const select = document.getElementById('product-select');
-  if (select._ussInstance) select._ussInstance.destroy();
-  if (window.UniversalSearchSelect) new UniversalSearchSelect(select);
+  select.value = b.product_id;
+  if (select._ussInstance) {
+    select._ussInstance.updateOptions();
+  }
   
   currentLines = (b.production_ingredients || []).map(ing => {
     // Determine action from quantity_used: negative means INCREASE, positive means DECREASE
@@ -161,7 +176,7 @@ function renderIngredientsTable() {
     return `<tr>
       <td>
         <span class="mobile-label">Inventory Item</span>
-        <select class="form-select uss-inventory-select" onchange="updateIngredient(${idx}, 'inventory_id', this.value)">
+        <select class="form-select uss-inventory-select" data-native="true" onchange="updateIngredient(${idx}, 'inventory_id', this.value)">
           ${options.replace(`value="${line.inventory_id}"`, `value="${line.inventory_id}" selected`)}
         </select>
       </td>
@@ -171,7 +186,7 @@ function renderIngredientsTable() {
       </td>
       <td>
         <span class="mobile-label">Unit</span>
-        <select class="form-select" onchange="updateIngredient(${idx}, 'unit', this.value)">
+        <select class="form-select" data-native="true" onchange="updateIngredient(${idx}, 'unit', this.value)">
           <option value="Kg" ${unitLabel === 'Kg' || unitLabel === 'kg' ? 'selected' : ''}>Kg</option>
           <option value="Litre" ${unitLabel === 'Litre' || unitLabel === 'L' || unitLabel === 'litre' ? 'selected' : ''}>Litre</option>
           <option value="g" ${unitLabel === 'g' || unitLabel === 'G' ? 'selected' : ''}>g</option>
@@ -182,7 +197,7 @@ function renderIngredientsTable() {
       </td>
       <td>
         <span class="mobile-label">Action</span>
-        <select class="form-select" style="font-weight: bold; color: ${line.action === 'INCREASE' ? 'var(--success)' : 'var(--danger)'};" onchange="updateIngredient(${idx}, 'action', this.value)">
+        <select class="form-select" data-native="true" style="font-weight: bold; color: ${line.action === 'INCREASE' ? 'var(--success)' : 'var(--danger)'};" onchange="updateIngredient(${idx}, 'action', this.value)">
           <option value="DECREASE" ${line.action === 'DECREASE' ? 'selected' : ''}>DECREASE</option>
           <option value="INCREASE" ${line.action === 'INCREASE' ? 'selected' : ''}>INCREASE</option>
         </select>
@@ -195,13 +210,10 @@ function renderIngredientsTable() {
       </td>
     </tr>`;
   }).join('');
-  
-  setTimeout(() => {
-    if (window.UTILS?.initAllAutocompleteSelects) {
-      UTILS.initAllAutocompleteSelects();
-    }
-  }, 10);
+  // NOTE: Do NOT call initAllAutocompleteSelects() here — it would re-wrap product-select and create duplicates.
+  // Ingredient selects are marked data-native="true" so initAll skips them.
 }
+
 
 async function saveProduction() {
   const d = UTILS.getFormData('production-form');
