@@ -88,7 +88,7 @@ async function buildDetailedOrderItems() {
           status: o.status,
           product_name: it.product_name,
           product_id: it.product_id,
-          packaging_size: it.packaging_size,
+          packaging_size: it.packaging_size || it.packing_size || '',
           quantity: it.quantity,
           unit_price: it.unit_price,
           total: it.total
@@ -275,7 +275,7 @@ async function viewOrder(id) {
     const statusBadge = `<span class="badge ${isCompleted ? 'badge-success' : 'badge-warning'}">${statusVal}</span>`;
 
     let itemsHtml = (o.items || []).map(it => {
-      const pSize = cleanSizeLabel(it.packaging_size || '', '');
+      const pSize = cleanSizeLabel(it.packaging_size || it.packing_size || '', '');
       return `
         <div style="padding: 10px 12px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px;">
           <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 6px;">
@@ -630,9 +630,22 @@ async function onProductSelectChange(idx, valOrEvt) {
     it.packaging_size = cleanSizeLabel(rawSize, p?.unit);
     it.unit_price = parseFloat(selectedOpt.sell_price || selectedOpt.selling_price) || parseFloat(p?.sell_price) || 0;
   } else {
-    it.packaging_size = p?.unit || '';
+    it.packaging_size = p?.unit || '1 L';
     it.unit_price = parseFloat(p?.sell_price) || 0;
   }
+
+  // Auto-match bottle if available
+  if (it.packaging_size && cachedBottlesList.length > 0 && !it.bottle_inventory_id) {
+    const normPack = String(it.packaging_size).toLowerCase().replace(/[^a-z0-9]/g, '');
+    const matchedBottle = cachedBottlesList.find(b => {
+      const normB = String(b.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      return normB.includes(normPack) || normPack.includes(normB);
+    });
+    if (matchedBottle) {
+      it.bottle_inventory_id = matchedBottle.id;
+    }
+  }
+
   it.total = (parseFloat(it.quantity) || 0) * (parseFloat(it.unit_price) || 0);
   await renderOrderItems();
 }
@@ -671,6 +684,18 @@ async function onPackSizeChange(idx, val) {
     const pr = parseFloat(matchOpt.sell_price || matchOpt.selling_price);
     if (!isNaN(pr) && pr >= 0) {
       it.unit_price = pr;
+    }
+  }
+
+  // Auto-match bottle if bottle not manually chosen or to update with pack size
+  if (it.packaging_size && cachedBottlesList.length > 0) {
+    const normPack = String(it.packaging_size).toLowerCase().replace(/[^a-z0-9]/g, '');
+    const matchedBottle = cachedBottlesList.find(b => {
+      const normB = String(b.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      return normB.includes(normPack) || normPack.includes(normB);
+    });
+    if (matchedBottle) {
+      it.bottle_inventory_id = matchedBottle.id;
     }
   }
   it.total = (parseFloat(it.quantity) || 0) * (parseFloat(it.unit_price) || 0);
@@ -960,12 +985,14 @@ async function saveOrder() {
           p_tax: taxPct,
           p_notes: d.notes || '',
           p_items: orderItems.map(it => {
-            const packSizeMl = UTILS.parsePackSizeInMl(it.packaging_size) || 1000;
+            const packSize = it.packaging_size || it.packing_size || '1 L';
+            const packSizeMl = UTILS.parsePackSizeInMl(packSize) || 1000;
             const volumeLiters = packSizeMl / 1000;
             return {
               product_id: it.product_id,
               product_name: it.product_name,
-              packaging_size: it.packaging_size || null,
+              packaging_size: packSize,
+              packing_size: packSize,
               quantity: parseFloat(it.quantity) || 0,
               base_volume: volumeLiters * (parseFloat(it.quantity) || 0),
               unit_price: parseFloat(it.unit_price) || 0,
@@ -975,7 +1002,13 @@ async function saveOrder() {
             };
           })
         });
-        if (error) throw error;
+        if (error) {
+           if (error.message && (error.message.includes('INSUFFICIENT_STOCK') || error.message.includes('Insufficient stock'))) {
+             const cleanMsg = error.message.replace('INSUFFICIENT_STOCK:', '').trim();
+             throw new Error(cleanMsg);
+           }
+           throw error;
+        }
       } else {
         const { error } = await window.dbClient.rpc('place_sales_order_v2', {
           p_order_no: finalOrderNo || null,
@@ -990,12 +1023,14 @@ async function saveOrder() {
           p_tax: taxPct,
           p_notes: d.notes || '',
           p_items: orderItems.map(it => {
-            const packSizeMl = UTILS.parsePackSizeInMl(it.packaging_size) || 1000;
+            const packSize = it.packaging_size || it.packing_size || '1 L';
+            const packSizeMl = UTILS.parsePackSizeInMl(packSize) || 1000;
             const volumeLiters = packSizeMl / 1000;
             return {
               product_id: it.product_id,
               product_name: it.product_name,
-              packaging_size: it.packaging_size || null,
+              packaging_size: packSize,
+              packing_size: packSize,
               quantity: parseFloat(it.quantity) || 0,
               base_volume: volumeLiters * (parseFloat(it.quantity) || 0),
               unit_price: parseFloat(it.unit_price) || 0,
