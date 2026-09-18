@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>S K ERP - Production</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css?v=1788872545871"><link rel="stylesheet" href="../assets/css/tables.css?v=1788872545871"><link rel="stylesheet" href="../assets/css/forms.css?v=1788872545871"><link rel="stylesheet" href="../assets/css/responsive.css?v=1788872545871">
+  <link rel="stylesheet" href="../assets/css/components/search-select.css?v=1788872545871">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="manifest" href="../manifest.json?v=1788872545871">
+  <meta name="theme-color" content="#10B981">
+<link rel="manifest" href="../manifest.json?v=1788872545871"><meta name="theme-color" content="#10B981">
+  <link rel="icon" type="image/jpeg" href="../assets/images/sk-logo.jpg">
+</head>
+<body>
+<div class="app-layout" id="app-layout">
+  <script src="../assets/js/shared-layout.js?v=1788872545871"></script>
+  <script>document.addEventListener('DOMContentLoaded',()=>LAYOUT.injectLayout('Production','Transactions'))</script>
+  <main class="main-content" id="main-content">
+    <div class="page-body">
+      <div class="page-header">
+        <div class="page-header-left">
+          <h2>Production</h2>
+          <p>Record production batches and sync inventory.</p>
+        </div>
+        <div class="page-header-right">
+          <button class="btn btn-primary" onclick="openProductionModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New Entry
+          </button>
+        </div>
+      </div>
+      
+      <div class="table-wrap data-table-wrap-mobile" id="production-table-wrap">
+        <div class="table-toolbar">
+          <div class="table-toolbar-left">
+            <div class="table-search">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input id="production-search-input" placeholder="Search production batches…">
+            </div>
+          </div>
+          <div class="table-toolbar-right"><span class="text-sm text-muted" id="debug-page-status">Loading…</span></div>
+        </div>
+        
+        <table class="data-table" id="production-table">
+          <thead>
+            <tr>
+              <th><input type="checkbox"></th>
+              <th>Batch No</th>
+              <th>Product</th>
+              <th>Formula</th>
+              <th>Date</th>
+              <th>Qty Produced</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="7"><div class="empty-state"><div class="spinner" style="margin:0 auto"></div></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Production Modal -->
+<div class="modal-overlay" id="production-modal">
+  <div class="modal modal-xl">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">New Production Batch</span>
+      <button class="modal-close" onclick="APP.closeModal('production-modal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <form id="production-form" onsubmit="return false">
+        
+        <!-- Section 1: Production Record -->
+        <section class="product-form-card" style="margin-bottom: 20px;">
+          <div class="product-form-card-head">
+            <h4>Production Record</h4>
+            <p>Log a new manufacturing batch.</p>
+          </div>
+          <div class="form-grid product-form-grid" style="padding: 20px; gap: 15px;">
+            <div class="form-group">
+              <label class="form-label">Product Manufactured *</label>
+              <select class="form-select" name="product_id" id="product-select" required>
+                <option value="">Select Product...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Production Quantity *</label>
+              <input class="form-input" name="quantity_produced" type="number" min="0.01" step="0.01" placeholder="e.g. 40" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Batch No (Optional)</label>
+              <input class="form-input" name="batch_no" type="text" placeholder="Auto-generated if blank">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Date *</label>
+              <input class="form-input" name="date" type="date" required>
+            </div>
+          </div>
+        </section>
+        
+        <!-- Section 2: Inventory Adjustments -->
+        <section class="product-form-card">
+          <div class="product-form-card-head">
+            <h4>Inventory Changes</h4>
+            <p>Select which inventory items to consume (DECREASE) and which items to output (INCREASE).</p>
+          </div>
+          <div style="padding: 20px;">
+            <div class="line-items-wrap">
+              <table class="line-items-table" style="margin-bottom:8px">
+                <thead>
+                  <tr>
+                    <th style="width: 40%;">Inventory Item</th>
+                    <th style="width: 20%;">Quantity</th>
+                    <th style="width: 15%;">Unit</th>
+                    <th style="width: 20%;">Action</th>
+                    <th style="width: 5%;"></th>
+                  </tr>
+                </thead>
+                <tbody id="ingredients-tbody"></tbody>
+              </table>
+            </div>
+            <button type="button" class="add-line-btn" style="margin-top: 10px;" onclick="addIngredientRow()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;margin-right:4px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Inventory Item
+            </button>
+          </div>
+        </section>
+        
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="APP.closeModal('production-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveProduction()">Save Batch</button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js?v=1788872545871"></script>
+<script src="../assets/js/database.js?v=1788872545871"></script>
+<script src="../assets/js/app.js?v=1788872545871"></script>
+<script src="../assets/js/production.js?v=1788872545871"></script>
+</body>
+</html>

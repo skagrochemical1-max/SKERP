@@ -1,0 +1,218 @@
+/**
+ * SK Agro Chemicals — SECURE Invoice Backend System
+ * Features: API Token Auth, Formula Injection Prevention, Type Safety, Delete Enabled
+ */
+
+const SHEET_NAME = 'InvoiceHistory';
+// 🔒 SECURITY MEASURE 1: API Secret Token
+// This must match exactly with the token in your frontend api.js
+const API_SECRET = 'sk_agro_secure_key_2026'; 
+
+function doPost(e) {
+  try {
+    const action = e.parameter.action;
+    const token = e.parameter.token;
+    
+    // Auth Check
+    if (token !== API_SECRET) throw new Error("Unauthorized request");
+    
+    // Size check (prevent database crashing attacks)
+    if (e.postData.contents.length > 200000) throw new Error("Payload too large");
+
+    const body = JSON.parse(e.postData.contents);
+    
+    if (action === 'saveInvoice') {
+      validatePayload(body); // Only validate when saving
+      return respond(saveInvoice(body));
+    } else if (action === 'updateInvoice') {
+      validatePayload(body); // Only validate when updating
+      return respond(updateInvoice(body));
+    } else if (action === 'deleteInvoice') {
+      return respond(deleteInvoice(body));
+    }
+    
+    throw new Error('Invalid POST action');
+  } catch (error) {
+    return errorResponse(error.message);
+  }
+}
+
+function doGet(e) {
+  try {
+    const action = e.parameter.action;
+    const token = e.parameter.token;
+    
+    // Auth Check
+    if (token !== API_SECRET) throw new Error("Unauthorized request");
+    
+    if (action === 'getInvoices') {
+      return respond(getInvoices());
+    } else if (action === 'getInvoice') {
+      return respond(getInvoice(e.parameter.id));
+    } else if (action === 'getNextInvoiceNumber') {
+      return respond(getNextInvoiceNumber());
+    }
+    
+    throw new Error('Invalid GET action');
+  } catch (error) {
+    return errorResponse(error.message);
+  }
+}
+
+// ─── HANDLERS ─────────────────────────────────────────────────────────────
+
+function saveInvoice(data) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  
+  const uniqueId = sanitize(data.meta.uniqueId) || `INV-${new Date().getTime()}`;
+  const now = new Date().toISOString();
+  
+  const rowData = [
+    uniqueId,
+    sanitize(data.meta.invoiceNumber),
+    sanitize(data.meta.date),
+    sanitize(data.customer.name || ''),
+    sanitize(data.customer.phone || ''),
+    parseFloat(data.calculations.grandTotal) || 0, // Force number
+    sanitize(data.meta.status || 'Saved'),
+    now,
+    now,
+    JSON.stringify(data)
+  ];
+  
+  sheet.appendRow(rowData);
+  return { success: true, uniqueId: uniqueId, invoiceNumber: data.meta.invoiceNumber };
+}
+
+function updateInvoice(data) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  const dataRange = sheet.getDataRange().getValues();
+  const uniqueId = sanitize(data.meta.uniqueId);
+  
+  if (!uniqueId) throw new Error("Missing uniqueId for update");
+  
+  let rowIndex = -1;
+  for (let i = 1; i < dataRange.length; i++) {
+    if (String(dataRange[i][0]) === String(uniqueId)) { // Convert both to string for safe comparison
+      rowIndex = i + 1;
+      break;
+    }
+  }
+  
+  if (rowIndex === -1) throw new Error("Invoice not found in database");
+  
+  const now = new Date().toISOString();
+  const rowData = [
+    uniqueId,
+    sanitize(data.meta.invoiceNumber),
+    sanitize(data.meta.date),
+    sanitize(data.customer.name || ''),
+    sanitize(data.customer.phone || ''),
+    parseFloat(data.calculations.grandTotal) || 0,
+    sanitize(data.meta.status || 'Saved'),
+    dataRange[rowIndex - 1][7], // Keep original Created Timestamp
+    now,
+    JSON.stringify(data)
+  ];
+  
+  sheet.getRange(rowIndex, 1, 1, 10).setValues([rowData]);
+  return { success: true, uniqueId: uniqueId };
+}
+
+function deleteInvoice(body) {
+  if (!body.uniqueId) throw new Error("Missing uniqueId for delete");
+  const uniqueId = body.uniqueId;
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  const dataRange = sheet.getDataRange().getValues();
+  
+  for (let i = 1; i < dataRange.length; i++) {
+    if (String(dataRange[i][0]) === String(uniqueId)) {
+      // +1 because arrays are 0-indexed but Google Sheets rows are 1-indexed
+      sheet.deleteRow(i + 1);
+      return { success: true, message: "Invoice deleted" };
+    }
+  }
+  throw new Error("Invoice not found to delete");
+}
+
+function getInvoices() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  const dataRange = sheet.getDataRange().getValues();
+  const invoices = [];
+  
+  for (let i = dataRange.length - 1; i > 0; i--) {
+    const row = dataRange[i];
+    if (!row[0]) continue;
+    
+    invoices.push({
+      uniqueId: row[0],
+      invoiceNumber: row[1],
+      date: row[2],
+      customerName: row[3],
+      mobile: row[4],
+      totalAmount: row[5],
+      status: row[6],
+      updatedAt: row[8]
+    });
+  }
+  return invoices;
+}
+
+function getInvoice(uniqueId) {
+  if (!uniqueId) throw new Error("ID required");
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  const dataRange = sheet.getDataRange().getValues();
+  
+  for (let i = 1; i < dataRange.length; i++) {
+    if (String(dataRange[i][0]) === String(uniqueId)) {
+      return JSON.parse(dataRange[i][9] || '{}'); // fixed parsing bug
+    }
+  }
+  throw new Error("Invoice not found");
+}
+
+function getNextInvoiceNumber() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  const dataRange = sheet.getDataRange().getValues();
+  
+  let max = 0;
+  for (let i = 1; i < dataRange.length; i++) {
+    const numStr = dataRange[i][1];
+    if (numStr) {
+      const num = parseInt(String(numStr).replace(/\D/g, ''), 10);
+      if (!isNaN(num) && num > max) max = num;
+    }
+  }
+  return max + 1;
+}
+
+// ─── SECURITY UTILITIES ───────────────────────────────────────────────────
+
+// 🔒 SECURITY MEASURE 2: Prevent Google Sheets Formula/CSV Injection
+// Removes leading =, +, -, or @ so malicious formulas don't execute
+function sanitize(input) {
+  if (input === null || input === undefined) return '';
+  let str = String(input).trim();
+  if (/^[=+\-@]/.test(str)) {
+    str = "'" + str; // Prefix with apostrophe to force text evaluation in Sheets
+  }
+  return str;
+}
+
+// 🔒 SECURITY MEASURE 3: Strict Structural Validation
+function validatePayload(data) {
+  if (!data || typeof data !== 'object') throw new Error("Invalid payload");
+  if (!data.meta || !data.meta.invoiceNumber) throw new Error("Missing invoice number");
+  if (!data.customer) throw new Error("Missing customer info");
+  if (!data.calculations || typeof data.calculations.grandTotal === 'undefined') throw new Error("Missing totals");
+}
+
+function respond(data) {
+  return ContentService.createTextOutput(JSON.stringify({ data: data }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function errorResponse(message) {
+  return ContentService.createTextOutput(JSON.stringify({ error: message }))
+    .setMimeType(ContentService.MimeType.JSON);
+}

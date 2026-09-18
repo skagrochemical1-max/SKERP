@@ -1,0 +1,83 @@
+[
+  {
+    "id": "form-1709636400000-abc123def",
+    "name": "NPK Complex 15-15-15",
+    "description": "High-performance complex for field crops and vegetables",
+    "baseVolume": 1000,
+    "baseUnit": "L",
+    "ingredients": [
+      {
+        "name": "Nitrogen Source",
+        "percentage": 40,
+        "quantity": 0,
+        "costPerUnit": 2.5
+      },
+      {
+        "name": "Phosphate Compound",
+        "percentage": 35,
+        "quantity": 0,
+        "costPerUnit": 3.2
+      },
+      {
+        "name": "Potassium Salt",
+        "percentage": 25,
+        "quantity": 0,
+        "costPerUnit": 2.8
+      }
+    ],
+    "createdDate": "2024-03-05T10:00:00.000Z",
+    "updatedAt": "2024-03-05T10:00:00.000Z"
+  },
+  {
+    "id": "form-1709636400001-xyz789uvw",
+    "name": "Organic Bio-Stimulant",
+    "description": "Eco-friendly stimulant for organic farming",
+    "baseVolume": 500,
+    "baseUnit": "L",
+    "ingredients": [
+      {
+        "name": "Seaweed Extract",
+        "percentage": 0,
+        "quantity": 150,
+        "costPerUnit": 5
+      },
+      {
+        "name": "Amino Acids",
+        "percentage": 0,
+        "quantity": 200,
+        "costPerUnit": 4.5
+      },
+      {
+        "name": "Humic Acid",
+        "percentage": 0,
+        "quantity": 150,
+        "costPerUnit": 3
+      }
+    ],
+    "createdDate": "2024-03-05T10:00:00.000Z",
+    "updatedAt": "2024-03-05T10:00:00.000Z"
+  },
+  {
+    "name": "cdc",
+    "description": "",
+    "baseVolume": 1000,
+    "baseUnit": "L",
+    "ingredients": [
+      {
+        "name": "cdc",
+        "percentage": 50,
+        "quantity": 0,
+        "costPerUnit": 0
+      },
+      {
+        "name": "cdac",
+        "percentage": 50,
+        "quantity": 0,
+        "costPerUnit": 0
+      }
+    ],
+    "id": "89566e4c-a34f-4481-94e2-a03ff598259e",
+    "createdDate": "2026-03-05T07:31:58.113Z",
+    "updatedAt": "2026-03-05T07:31:58.113Z"
+  }
+]
