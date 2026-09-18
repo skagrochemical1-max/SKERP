@@ -15,6 +15,7 @@ function updatePageDebug(text, color) {
 }
 
 let cachedBottlesList = [];
+let cachedTechnicalsList = [];
 
 async function fetchPackagingData() {
   try {
@@ -25,6 +26,10 @@ async function fetchPackagingData() {
     const { data: invData, error: invErr } = await window.dbClient.from('inventory_items').select('*');
     if (!invErr && invData) {
       cachedBottlesList = invData.filter(it => it.category === 'Bottles');
+      cachedTechnicalsList = invData.filter(it => {
+        const cat = String(it.category || '').toLowerCase().trim();
+        return cat === 'technical' || cat === 'others';
+      });
     }
   } catch (e) {
     console.error('Failed to fetch packaging/inventory data:', e);
@@ -609,6 +614,31 @@ async function onProductSelectChange(idx, valOrEvt) {
   
   it.product_name = p?.name || '';
   it.inventory_item_id = p?.inventory_item_id || null;
+
+  // Fallback: If product has no linked inventory_item_id in DB, match against cachedTechnicalsList
+  if (!it.inventory_item_id && cachedTechnicalsList.length > 0 && it.product_name) {
+    const normProd = String(it.product_name).toLowerCase().replace(/[^a-z0-9]/g, '');
+    const exactMatch = cachedTechnicalsList.find(t => String(t.name).toLowerCase().trim() === String(it.product_name).toLowerCase().trim());
+    if (exactMatch) {
+      it.inventory_item_id = exactMatch.id;
+    } else {
+      const normMatch = cachedTechnicalsList.find(t => {
+        const normT = String(t.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+        return normT === normProd;
+      });
+      if (normMatch) {
+        it.inventory_item_id = normMatch.id;
+      } else {
+        const fuzzyMatch = cachedTechnicalsList.find(t => {
+          const normT = String(t.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+          return normT.includes(normProd) || normProd.includes(normT);
+        });
+        if (fuzzyMatch) {
+          it.inventory_item_id = fuzzyMatch.id;
+        }
+      }
+    }
+  }
   let pkgOptions = p?.packaging_options || [];
   if (!pkgOptions.length && val) {
     try {
