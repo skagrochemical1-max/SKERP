@@ -1,56 +1,73 @@
-﻿-- ==============================================================================
--- Migration: 2026-09-18-fix-inventory-deductions.sql
--- Fixes inconsistent inventory deduction for sales orders, formulations, and technicals.
--- ==============================================================================
+-- ============================================================
+-- Fix: Inventory Deductions for Sales Orders
+-- Created: 2026-09-18
+-- Fixes:
+--   1. normalize_inv_name() helper for fuzzy name matching
+--   2. get_pack_size_ml() improved decimal handling
+--   3. resolve_sales_product_inventory() with normalized name tier
+--   4. apply_sales_item_inventory() with formulation fallback counter
+--   5. Auto-link products to inventory_items by name
+-- ============================================================
 
--- 1. Helper function for robust alphanumeric normalization (strips %, spaces, dots, dashes, etc.)
+-- 1. Normalize name for comparison (strip spaces, %, punctuation, lowercase)
 CREATE OR REPLACE FUNCTION normalize_inv_name(p_name TEXT)
-RETURNS TEXT AS 
+RETURNS TEXT AS $$
 BEGIN
-  RETURN regexp_replace(lower(coalesce(btrim(p_name), '')), '[^a-z0-9]', '', 'g');
+  RETURN lower(regexp_replace(btrim(coalesce(p_name, '')), '[^a-zA-Z0-9]', '', 'g'));
 END;
- LANGUAGE plpgsql IMMUTABLE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
--- 2. Improved get_pack_size_ml function handling decimals and units reliably
-CREATE OR REPLACE FUNCTION get_pack_size_ml(p_size VARCHAR)
-RETURNS DOUBLE PRECISION AS 
+-- 2. Parse pack size string to millilitres (e.g. "1 L" -> 1000.0, "500 ml" -> 500.0)
+CREATE OR REPLACE FUNCTION get_pack_size_ml(p_size TEXT)
+RETURNS DOUBLE PRECISION AS $$
 DECLARE
-  v_num DOUBLE PRECISION;
-  v_unit VARCHAR;
-  v_cleaned VARCHAR;
+  v_num TEXT;
+  v_unit TEXT;
+  v_val DOUBLE PRECISION;
 BEGIN
   IF p_size IS NULL OR btrim(p_size) = '' THEN
-    RETURN 1000.0;
+    RETURN 1000.0; -- default 1 L
   END IF;
 
-  v_cleaned := lower(btrim(p_size));
-  v_num := NULLIF(substring(v_cleaned FROM '^[0-9]+[.]?[0-9]*'), '')::DOUBLE PRECISION;
-  v_unit := trim(substring(v_cleaned FROM '[a-z]+$'));
+  -- Extract leading number (supports decimals like 1.5)
+  v_num := regexp_replace(btrim(p_size), '^([0-9]+\.?[0-9]*)\s*.*$', '\1');
+  v_unit := lower(regexp_replace(btrim(p_size), '^[0-9]+\.?[0-9]*\s*', ''));
 
-  IF v_num IS NULL THEN
-    RETURN 1000.0;
-  ELSIF v_unit IN ('l', 'ltr', 'litre', 'litres', 'kg') THEN
-    RETURN v_num * 1000.0;
-  ELSIF v_unit IN ('ml', 'gm', 'g', 'gram', 'grams') THEN
-    RETURN v_num;
+  BEGIN
+    v_val := v_num::DOUBLE PRECISION;
+  EXCEPTION WHEN OTHERS THEN
+    v_val := 1.0;
+  END;
+
+  IF v_val <= 0 THEN v_val := 1.0; END IF;
+
+  IF v_unit IN ('ml', 'millilitre', 'milliliter', 'cc') THEN
+    RETURN v_val;
+  ELSIF v_unit IN ('l', 'ltr', 'litre', 'liter', 'lt') THEN
+    RETURN v_val * 1000.0;
+  ELSIF v_unit IN ('kg', 'kilogram') THEN
+    RETURN v_val * 1000.0;
+  ELSIF v_unit IN ('g', 'gm', 'gram') THEN
+    RETURN v_val;
+  ELSE
+    -- Assume litres if no unit recognized
+    RETURN v_val * 1000.0;
   END IF;
-
-  RETURN v_num * 1000.0;
 END;
- LANGUAGE plpgsql IMMUTABLE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
--- 3. Robust resolve_sales_product_inventory
+-- 3. Resolve which inventory_item to deduct for a given product (5-tier lookup)
 CREATE OR REPLACE FUNCTION resolve_sales_product_inventory(
   p_product_id INT,
   p_item_inventory_id INT DEFAULT NULL
 )
-RETURNS INT AS 
+RETURNS INT AS $$
 DECLARE
   v_inventory_id INT;
   v_prod_name VARCHAR;
   v_norm_name TEXT;
 BEGIN
-  -- 1. Explicit item inventory passed in
+  -- Tier 1: Explicit inventory item ID passed in from the order item
   IF p_item_inventory_id IS NOT NULL THEN
     SELECT id INTO v_inventory_id FROM inventory_items WHERE id = p_item_inventory_id;
     IF v_inventory_id IS NOT NULL THEN
@@ -62,7 +79,7 @@ BEGIN
     RETURN NULL;
   END IF;
 
-  -- 2. Explicit inventory_item_id linked on the product record
+  -- Tier 2: Explicit inventory_item_id linked on the product record
   SELECT inventory_item_id, name INTO v_inventory_id, v_prod_name FROM products WHERE id = p_product_id;
   IF v_inventory_id IS NOT NULL THEN
     SELECT id INTO v_inventory_id FROM inventory_items WHERE id = v_inventory_id;
@@ -71,7 +88,7 @@ BEGIN
     END IF;
   END IF;
 
-  -- 3. Exact match against inventory_items
+  -- Tier 3: Exact name match against inventory_items
   IF v_prod_name IS NOT NULL AND btrim(v_prod_name) <> '' THEN
     SELECT id INTO v_inventory_id
     FROM inventory_items
@@ -83,7 +100,7 @@ BEGIN
       RETURN v_inventory_id;
     END IF;
 
-    -- 4. Normalized match (stripping spaces, %, punctuation)
+    -- Tier 4: Normalized match (stripping spaces, %, punctuation)
     v_norm_name := normalize_inv_name(v_prod_name);
     IF v_norm_name <> '' THEN
       SELECT id INTO v_inventory_id
@@ -96,7 +113,7 @@ BEGIN
         RETURN v_inventory_id;
       END IF;
 
-      -- 5. Fuzzy / Substring match
+      -- Tier 5: Fuzzy / Substring match
       SELECT id INTO v_inventory_id
       FROM inventory_items
       WHERE normalize_inv_name(name) LIKE '%' || v_norm_name || '%'
@@ -112,7 +129,7 @@ BEGIN
 
   RETURN NULL;
 END;
- LANGUAGE plpgsql STABLE;
+$$ LANGUAGE plpgsql STABLE;
 
 -- 4. Robust apply_sales_item_inventory with guaranteed fallback
 CREATE OR REPLACE FUNCTION apply_sales_item_inventory(
@@ -123,7 +140,7 @@ CREATE OR REPLACE FUNCTION apply_sales_item_inventory(
   p_bottle_inventory_id INT DEFAULT NULL,
   p_direct_inventory_id INT DEFAULT NULL
 )
-RETURNS INT AS 
+RETURNS INT AS $$
 DECLARE
   v_formulation RECORD;
   v_ingredient RECORD;
@@ -141,7 +158,7 @@ BEGIN
 
   v_pack_ml := get_pack_size_ml(p_packaging_size);
 
-  -- 1. Check if product has an active formulation
+  -- Try to find a formulation for this product
   IF p_product_id IS NOT NULL THEN
     SELECT * INTO v_formulation
     FROM formulations
@@ -150,36 +167,40 @@ BEGIN
   END IF;
 
   IF v_formulation.id IS NOT NULL THEN
-    -- Consume formulation ingredients
+    -- Deduct each formulation ingredient
     FOR v_ingredient IN
       SELECT * FROM formulation_ingredients WHERE formulation_id = v_formulation.id
     LOOP
       v_ing_qty := coalesce(v_ingredient.quantity, 0);
+      -- If quantity is not set, derive from percentage of batch_size
       IF v_ing_qty <= 0 AND coalesce(v_ingredient.percentage, 0) > 0 THEN
         v_ing_qty := (v_formulation.batch_size * v_ingredient.percentage) / 100.0;
       END IF;
 
       IF v_ing_qty > 0 AND v_formulation.batch_size > 0 THEN
+        -- Scale: how many batch-sized units does this order represent?
         v_calc_qty := (p_quantity * (v_pack_ml / 1000.0) / v_formulation.batch_size) * v_ing_qty;
-        
-        -- Resolve ingredient inventory ID safely
+
+        -- Resolve inventory item for this ingredient (4-tier)
         v_ing_inv_id := NULL;
+
+        -- Tier A: ingredient.product_id is an inventory_items.id directly
         IF v_ingredient.product_id IS NOT NULL THEN
           SELECT id INTO v_ing_inv_id FROM inventory_items WHERE id = v_ingredient.product_id;
+          -- Tier B: ingredient.product_id is a products.id → get its inventory_item_id
           IF v_ing_inv_id IS NULL THEN
             SELECT inventory_item_id INTO v_ing_inv_id FROM products WHERE id = v_ingredient.product_id;
           END IF;
         END IF;
 
+        -- Tier C: match by product_name (exact, then normalized, then fuzzy)
         IF v_ing_inv_id IS NULL AND v_ingredient.product_name IS NOT NULL AND btrim(v_ingredient.product_name) <> '' THEN
-          -- Exact match
           SELECT id INTO v_ing_inv_id
           FROM inventory_items
           WHERE lower(btrim(name)) = lower(btrim(v_ingredient.product_name))
           ORDER BY id ASC
           LIMIT 1;
 
-          -- Normalized match (ignoring spaces, %, punctuation)
           IF v_ing_inv_id IS NULL THEN
             v_norm_ing_name := normalize_inv_name(v_ingredient.product_name);
             IF v_norm_ing_name <> '' THEN
@@ -189,7 +210,6 @@ BEGIN
               ORDER BY id ASC
               LIMIT 1;
 
-              -- Fuzzy substring match
               IF v_ing_inv_id IS NULL THEN
                 SELECT id INTO v_ing_inv_id
                 FROM inventory_items
@@ -209,13 +229,13 @@ BEGIN
       END IF;
     END LOOP;
 
-    -- Consume bottle packaging if specified
+    -- Deduct bottle regardless
     IF p_bottle_inventory_id IS NOT NULL THEN
       PERFORM consume_sales_inventory(p_order_id, p_bottle_inventory_id, p_quantity, 'Sale (Bottle)');
     END IF;
 
-    -- Fallback: If product had a formulation record but ZERO ingredients could be deducted,
-    -- fallback to direct technical deduction so inventory deduction is never skipped!
+    -- CRITICAL FALLBACK: If no formulation ingredients were found/deducted,
+    -- fall back to deducting the technical/product directly
     IF v_formulation_deducted = 0 THEN
       v_inventory_id := resolve_sales_product_inventory(p_product_id, p_direct_inventory_id);
       IF v_inventory_id IS NOT NULL THEN
@@ -228,26 +248,34 @@ BEGIN
     RETURN NULL;
   END IF;
 
-  -- 2. Non-formulation direct product
+  -- No formulation: deduct product technical directly
   v_inventory_id := resolve_sales_product_inventory(p_product_id, p_direct_inventory_id);
   IF v_inventory_id IS NOT NULL THEN
     v_calc_qty := p_quantity * (v_pack_ml / 1000.0);
     PERFORM consume_sales_inventory(p_order_id, v_inventory_id, v_calc_qty, 'Sale (Product)');
   END IF;
 
+  -- Deduct bottle
   IF p_bottle_inventory_id IS NOT NULL THEN
     PERFORM consume_sales_inventory(p_order_id, p_bottle_inventory_id, p_quantity, 'Sale (Bottle)');
   END IF;
 
   RETURN v_inventory_id;
 END;
- LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
--- 5. Auto-link unlinked products to technical inventory items using normalized matching
+-- 5. Auto-link products to inventory_items by normalized name match
+-- (only links products that have no inventory_item_id yet)
 UPDATE products p
-SET inventory_item_id = i.id
-FROM inventory_items i
+SET inventory_item_id = (
+  SELECT i.id FROM inventory_items i
+  WHERE normalize_inv_name(i.name) = normalize_inv_name(p.name)
+  ORDER BY i.id ASC LIMIT 1
+)
 WHERE p.inventory_item_id IS NULL
-  AND normalize_inv_name(p.name) = normalize_inv_name(i.name);
+  AND EXISTS (
+    SELECT 1 FROM inventory_items i
+    WHERE normalize_inv_name(i.name) = normalize_inv_name(p.name)
+  );
 
 NOTIFY pgrst, 'reload_schema';
