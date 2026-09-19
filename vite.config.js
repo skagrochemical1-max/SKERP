@@ -18,7 +18,6 @@ export default defineConfig({
         daily_transactions: resolve(__dirname, 'pages/daily-transactions.html'),
         calculator: resolve(__dirname, 'pages/calculator.html'),
         batch_calculator: resolve(__dirname, 'pages/batch-calculator.html'),
-        exports: resolve(__dirname, 'pages/exports.html'),
         profile: resolve(__dirname, 'pages/profile.html')
       }
     }
