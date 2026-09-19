@@ -115,6 +115,11 @@
             </div>
             <div class="form-grid product-form-grid">
               <div class="form-group"><label class="form-label">Batch No</label><input class="form-input" name="batch_no" placeholder="e.g. B2026-001"></div>
+              <div class="form-group"><label class="form-label">Linked Technical Stock (Inventory)</label>
+                <select class="form-select" name="inventory_item_id" id="product-tech-select">
+                  <option value="">Auto-match by name</option>
+                </select>
+              </div>
               <div class="form-group form-col-full"><label class="form-label">Technical Composition</label><input class="form-input" name="composition" placeholder="e.g. Chlorpyrifos 20%"></div>
               <div class="form-group form-col-full"><label class="form-label">Description</label><textarea class="form-textarea" name="description" rows="2" placeholder="Product description..."></textarea></div>
             </div>

@@ -462,6 +462,17 @@ async function loadTechnicalInventorySuggestions() {
     if (datalist) {
       datalist.innerHTML = technicalInventoryNames.map(name => `<option value="${name}"></option>`).join('');
     }
+
+    const techSelect = document.getElementById('product-tech-select');
+    if (techSelect) {
+      const techItems = (rawInventoryItems || []).filter(item => {
+        const cat = String(item.category || '').trim().toLowerCase();
+        return cat === 'technical' || cat === 'others';
+      });
+      techSelect.innerHTML = '<option value="">Auto-match by chemical name</option>' +
+        techItems.map(item => `<option value="${item.id}">${item.name} (${item.unit || ''})</option>`).join('');
+    }
+
     // Notify any autocomplete widgets that data is ready
     try { document.dispatchEvent(new CustomEvent('technicalInventoryLoaded')); } catch (e) {}
   } catch (err) {
@@ -980,13 +991,17 @@ async function saveProduct() {
     const productPurchasePrice = baseVariant.purchase_price || 0;
     const productSellPrice = baseVariant.sell_price || 0;
 
-    // Find linked inventory raw material if exists by name
-    let matchedInvId = null;
-    const matchedInv = (rawInventoryItems || []).find(it => 
-      String(it.name || '').trim().toLowerCase() === String(d.name || '').trim().toLowerCase()
-    );
-    if (matchedInv) {
-      matchedInvId = matchedInv.id;
+    // Find linked inventory technical item from dropdown or chemical matching
+    let matchedInvId = d.inventory_item_id ? parseInt(d.inventory_item_id, 10) : null;
+    if (!matchedInvId && window.UTILS?.matchProductToInventoryItem) {
+      const techInv = (rawInventoryItems || []).filter(it => {
+        const cat = String(it.category || '').toLowerCase().trim();
+        return cat === 'technical' || cat === 'others';
+      });
+      const matched = UTILS.matchProductToInventoryItem(d.name, techInv.length ? techInv : rawInventoryItems);
+      if (matched) {
+        matchedInvId = matched.id;
+      }
     }
 
     const payload = {

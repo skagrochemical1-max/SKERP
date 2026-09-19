@@ -269,6 +269,65 @@ function sortPackSizesDescending(items, sizeGetter = (x => x.packaging_size || x
   });
 }
 
-window.UTILS = { fmtCurrency, fmtDate, fmtDateInput, todayStr, getTodayDateString, setDefaultDateValue, applyDefaultDateInputs, fmtNumber, fmtPercent, formatPhone, isPhoneFieldName, isGstinFieldName, normalizeTextValue, formatTitleCaseWithPercentRules, statusBadge, applyMobileTableLabels, renderTableSkeleton, setSkeletonText, renderListSkeleton, getFormData, populateForm, destroyChart, initAllAutocompleteSelects, normalizeUnit, convertUnit, parsePackSizeInMl, sortPackSizesDescending, exportToCSV, exportToExcel };
+function getChemicalRoot(name) {
+  if (!name) return '';
+  let clean = String(name).toLowerCase().trim();
+  // Remove formulation suffixes e.g. 75% SP, 10% SC, 1.9% EC, etc.
+  clean = clean.replace(/[0-9]+(\.[0-9]+)?\s*%\s*[a-z]*/g, '');
+  clean = clean.replace(/\b\d+(\.\d+)?\b/g, '');
+  clean = clean.replace(/\b(ec|sc|sl|sp|wp|wg|gr|sg|fs|ew|me|wsp|wdg|tpm)\b/g, '');
+  // Normalize agricultural typos and transliteration variations
+  clean = clean.replace(/emamecctin/g, 'emamectin');
+  clean = clean.replace(/thiomethoxam/g, 'thiamethoxam');
+  clean = clean.replace(/thiophenate/g, 'thiophanate');
+  clean = clean.replace(/imezathpr/g, 'imazethapyr');
+  clean = clean.replace(/surfectant/g, 'surfactant');
+  clean = clean.replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+  return clean;
+}
+
+function matchProductToInventoryItem(prodName, invList) {
+  if (!prodName || !invList || !invList.length) return null;
+  const normalize = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const normProd = normalize(prodName);
   
-if ("serviceWorker" in navigator) { window.addEventListener("load", () => { navigator.serviceWorker.register("../sw.js").then(reg => console.log("SW registered")).catch(err => console.log("SW failed", err)); }); } 
+  // Tier 1: Exact normalized match
+  let m = invList.find(i => normalize(i.name) === normProd);
+  if (m) return m;
+
+  // Tier 1b: Normalized with typo corrections
+  const rootProd = getChemicalRoot(prodName);
+  const normCorrectedProd = normalize(rootProd);
+  if (normCorrectedProd) {
+    m = invList.find(i => {
+      const normCorrectedInv = normalize(getChemicalRoot(i.name));
+      return normCorrectedInv === normCorrectedProd;
+    });
+    if (m) return m;
+  }
+
+  // Tier 2: Direct substring match
+  m = invList.find(i => {
+    const normInv = normalize(i.name);
+    return (normInv && normProd && (normInv.includes(normProd) || normProd.includes(normInv)));
+  });
+  if (m) return m;
+
+  // Tier 3: Chemical root word/stem match
+  const prodWords = rootProd.split(' ').filter(w => w.length >= 3);
+  m = invList.find(i => {
+    const rootInv = getChemicalRoot(i.name);
+    const invWords = rootInv.split(' ').filter(w => w.length >= 3);
+    if (prodWords.length > 0 && invWords.length > 0) {
+      if (prodWords[0] === invWords[0]) return true;
+      if (prodWords[0].length >= 4 && invWords[0].length >= 4 && prodWords[0].slice(0, 4) === invWords[0].slice(0, 4)) return true;
+    }
+    return prodWords.some(pw => invWords.includes(pw));
+  });
+  return m || null;
+}
+
+window.UTILS = { fmtCurrency, fmtDate, fmtDateInput, todayStr, getTodayDateString, setDefaultDateValue, applyDefaultDateInputs, fmtNumber, fmtPercent, formatPhone, isPhoneFieldName, isGstinFieldName, normalizeTextValue, formatTitleCaseWithPercentRules, statusBadge, applyMobileTableLabels, renderTableSkeleton, setSkeletonText, renderListSkeleton, getFormData, populateForm, destroyChart, initAllAutocompleteSelects, normalizeUnit, convertUnit, parsePackSizeInMl, sortPackSizesDescending, exportToCSV, exportToExcel, getChemicalRoot, matchProductToInventoryItem };
+  
+if ("serviceWorker" in navigator) { window.addEventListener("load", () => { navigator.serviceWorker.register("../sw.js").then(reg => console.log("SW registered")).catch(err => console.log("SW failed", err)); }); }
+ 

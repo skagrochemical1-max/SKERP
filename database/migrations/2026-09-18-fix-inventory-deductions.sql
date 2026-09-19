@@ -1,15 +1,10 @@
 -- ============================================================
--- Fix: Inventory Deductions for Sales Orders
--- Created: 2026-09-18
--- Fixes:
---   1. normalize_inv_name() helper for fuzzy name matching
---   2. get_pack_size_ml() improved decimal handling
---   3. resolve_sales_product_inventory() with normalized name tier
---   4. apply_sales_item_inventory() with formulation fallback counter
---   5. Auto-link products to inventory_items by name
+-- Fix: Inventory Deductions for Sales Orders (All Categories)
+-- Permanent resolution: Chemical root extraction, 7-tier matching,
+-- formulation fallback, and automatic product link
 -- ============================================================
 
--- 1. Normalize name for comparison (strip spaces, %, punctuation, lowercase)
+-- 1. Helper: Normalize string (remove all non-alphanumerics, lowercase)
 CREATE OR REPLACE FUNCTION normalize_inv_name(p_name TEXT)
 RETURNS TEXT AS $$
 BEGIN
@@ -17,7 +12,39 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
--- 2. Parse pack size string to millilitres (e.g. "1 L" -> 1000.0, "500 ml" -> 500.0)
+-- 2. Helper: Extract chemical root by stripping formulation percentages, codes, and fixing agricultural typos
+CREATE OR REPLACE FUNCTION extract_chemical_root(p_name TEXT)
+RETURNS TEXT AS $$
+DECLARE
+  v_clean TEXT;
+BEGIN
+  IF p_name IS NULL OR btrim(p_name) = '' THEN
+    RETURN '';
+  END IF;
+
+  v_clean := lower(btrim(p_name));
+  -- Strip percentages e.g. 75% SP, 10% SC, 1.9% EC, 0.4% GR, 64% WP, etc.
+  v_clean := regexp_replace(v_clean, '[0-9]+(\.[0-9]+)?\s*%\s*[a-z]*', '', 'g');
+  -- Strip standalone numbers
+  v_clean := regexp_replace(v_clean, '\m[0-9]+(\.[0-9]+)?\M', '', 'g');
+  -- Strip standard formulation acronyms
+  v_clean := regexp_replace(v_clean, '\m(ec|sc|sl|sp|wp|wg|gr|sg|fs|ew|me|wsp|wdg|tpm|tech|technical)\M', '', 'g');
+  -- Common transliteration/typo variants in agricultural names
+  v_clean := replace(v_clean, 'emamecctin', 'emamectin');
+  v_clean := replace(v_clean, 'thiomethoxam', 'thiamethoxam');
+  v_clean := replace(v_clean, 'thiophenate', 'thiophanate');
+  v_clean := replace(v_clean, 'imezathpr', 'imazethapyr');
+  v_clean := replace(v_clean, 'surfectant', 'surfactant');
+  v_clean := replace(v_clean, 'topramazone', 'topra');
+  v_clean := replace(v_clean, 'topramezone', 'topra');
+  -- Remove non-alphanumeric except spaces
+  v_clean := regexp_replace(v_clean, '[^a-z0-9\s]', ' ', 'g');
+  v_clean := regexp_replace(btrim(v_clean), '\s+', ' ', 'g');
+  RETURN v_clean;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+-- 3. Helper: Parse pack size string to milliliters/grams
 CREATE OR REPLACE FUNCTION get_pack_size_ml(p_size TEXT)
 RETURNS DOUBLE PRECISION AS $$
 DECLARE
@@ -26,10 +53,9 @@ DECLARE
   v_val DOUBLE PRECISION;
 BEGIN
   IF p_size IS NULL OR btrim(p_size) = '' THEN
-    RETURN 1000.0; -- default 1 L
+    RETURN 1000.0;
   END IF;
 
-  -- Extract leading number (supports decimals like 1.5)
   v_num := regexp_replace(btrim(p_size), '^([0-9]+\.?[0-9]*)\s*.*$', '\1');
   v_unit := lower(regexp_replace(btrim(p_size), '^[0-9]+\.?[0-9]*\s*', ''));
 
@@ -50,13 +76,12 @@ BEGIN
   ELSIF v_unit IN ('g', 'gm', 'gram') THEN
     RETURN v_val;
   ELSE
-    -- Assume litres if no unit recognized
     RETURN v_val * 1000.0;
   END IF;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
--- 3. Resolve which inventory_item to deduct for a given product (5-tier lookup)
+-- 4. 7-Tier resolution: Product -> inventory_items ID
 CREATE OR REPLACE FUNCTION resolve_sales_product_inventory(
   p_product_id INT,
   p_item_inventory_id INT DEFAULT NULL
@@ -66,8 +91,10 @@ DECLARE
   v_inventory_id INT;
   v_prod_name VARCHAR;
   v_norm_name TEXT;
+  v_chem_root TEXT;
+  v_first_word TEXT;
 BEGIN
-  -- Tier 1: Explicit inventory item ID passed in from the order item
+  -- Tier 1: Explicit inventory item ID passed in directly
   IF p_item_inventory_id IS NOT NULL THEN
     SELECT id INTO v_inventory_id FROM inventory_items WHERE id = p_item_inventory_id;
     IF v_inventory_id IS NOT NULL THEN
@@ -79,7 +106,7 @@ BEGIN
     RETURN NULL;
   END IF;
 
-  -- Tier 2: Explicit inventory_item_id linked on the product record
+  -- Tier 2: Explicit inventory_item_id linked on the products table
   SELECT inventory_item_id, name INTO v_inventory_id, v_prod_name FROM products WHERE id = p_product_id;
   IF v_inventory_id IS NOT NULL THEN
     SELECT id INTO v_inventory_id FROM inventory_items WHERE id = v_inventory_id;
@@ -88,37 +115,73 @@ BEGIN
     END IF;
   END IF;
 
-  -- Tier 3: Exact name match against inventory_items
-  IF v_prod_name IS NOT NULL AND btrim(v_prod_name) <> '' THEN
+  IF v_prod_name IS NULL OR btrim(v_prod_name) = '' THEN
+    RETURN NULL;
+  END IF;
+
+  -- Tier 3: Exact name match (case-insensitive)
+  SELECT id INTO v_inventory_id
+  FROM inventory_items
+  WHERE lower(btrim(name)) = lower(btrim(v_prod_name))
+  ORDER BY (category = 'Technical') DESC, id ASC
+  LIMIT 1;
+
+  IF v_inventory_id IS NOT NULL THEN
+    RETURN v_inventory_id;
+  END IF;
+
+  -- Tier 4: Normalized name match (ignoring spaces, %, punctuation)
+  v_norm_name := normalize_inv_name(v_prod_name);
+  IF v_norm_name <> '' THEN
     SELECT id INTO v_inventory_id
     FROM inventory_items
-    WHERE lower(btrim(name)) = lower(btrim(v_prod_name))
-    ORDER BY id ASC
+    WHERE normalize_inv_name(name) = v_norm_name
+    ORDER BY (category = 'Technical') DESC, id ASC
     LIMIT 1;
 
     IF v_inventory_id IS NOT NULL THEN
       RETURN v_inventory_id;
     END IF;
+  END IF;
 
-    -- Tier 4: Normalized match (stripping spaces, %, punctuation)
-    v_norm_name := normalize_inv_name(v_prod_name);
-    IF v_norm_name <> '' THEN
+  -- Tier 5: Corrected chemical root normalized match
+  v_chem_root := extract_chemical_root(v_prod_name);
+  IF v_chem_root <> '' THEN
+    SELECT id INTO v_inventory_id
+    FROM inventory_items
+    WHERE normalize_inv_name(extract_chemical_root(name)) = normalize_inv_name(v_chem_root)
+    ORDER BY (category = 'Technical') DESC, id ASC
+    LIMIT 1;
+
+    IF v_inventory_id IS NOT NULL THEN
+      RETURN v_inventory_id;
+    END IF;
+  END IF;
+
+  -- Tier 6: Substring / LIKE match
+  IF v_norm_name <> '' THEN
+    SELECT id INTO v_inventory_id
+    FROM inventory_items
+    WHERE normalize_inv_name(name) LIKE '%' || v_norm_name || '%'
+       OR v_norm_name LIKE '%' || normalize_inv_name(name) || '%'
+    ORDER BY (category = 'Technical') DESC, length(name) DESC, id ASC
+    LIMIT 1;
+
+    IF v_inventory_id IS NOT NULL THEN
+      RETURN v_inventory_id;
+    END IF;
+  END IF;
+
+  -- Tier 7: First chemical root word/stem match (e.g. acephate, emamectin, atrazine, mancozeb)
+  IF v_chem_root <> '' THEN
+    v_first_word := split_part(v_chem_root, ' ', 1);
+    IF length(v_first_word) >= 4 THEN
       SELECT id INTO v_inventory_id
       FROM inventory_items
-      WHERE normalize_inv_name(name) = v_norm_name
-      ORDER BY id ASC
-      LIMIT 1;
-
-      IF v_inventory_id IS NOT NULL THEN
-        RETURN v_inventory_id;
-      END IF;
-
-      -- Tier 5: Fuzzy / Substring match
-      SELECT id INTO v_inventory_id
-      FROM inventory_items
-      WHERE normalize_inv_name(name) LIKE '%' || v_norm_name || '%'
-         OR v_norm_name LIKE '%' || normalize_inv_name(name) || '%'
-      ORDER BY length(name) DESC, id ASC
+      WHERE lower(name) LIKE '%' || v_first_word || '%'
+         OR lower(extract_chemical_root(name)) LIKE '%' || v_first_word || '%'
+         OR substring(normalize_inv_name(extract_chemical_root(name)) from 1 for 4) = substring(normalize_inv_name(v_chem_root) from 1 for 4)
+      ORDER BY (category = 'Technical') DESC, id ASC
       LIMIT 1;
 
       IF v_inventory_id IS NOT NULL THEN
@@ -131,7 +194,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql STABLE;
 
--- 4. Robust apply_sales_item_inventory with guaranteed fallback
+-- 5. Deduct inventory with guaranteed fallback to technical
 CREATE OR REPLACE FUNCTION apply_sales_item_inventory(
   p_order_id INT,
   p_product_id INT,
@@ -158,7 +221,7 @@ BEGIN
 
   v_pack_ml := get_pack_size_ml(p_packaging_size);
 
-  -- Try to find a formulation for this product
+  -- 1. Check if product has a formulation
   IF p_product_id IS NOT NULL THEN
     SELECT * INTO v_formulation
     FROM formulations
@@ -167,39 +230,30 @@ BEGIN
   END IF;
 
   IF v_formulation.id IS NOT NULL THEN
-    -- Deduct each formulation ingredient
     FOR v_ingredient IN
       SELECT * FROM formulation_ingredients WHERE formulation_id = v_formulation.id
     LOOP
       v_ing_qty := coalesce(v_ingredient.quantity, 0);
-      -- If quantity is not set, derive from percentage of batch_size
       IF v_ing_qty <= 0 AND coalesce(v_ingredient.percentage, 0) > 0 THEN
         v_ing_qty := (v_formulation.batch_size * v_ingredient.percentage) / 100.0;
       END IF;
 
       IF v_ing_qty > 0 AND v_formulation.batch_size > 0 THEN
-        -- Scale: how many batch-sized units does this order represent?
         v_calc_qty := (p_quantity * (v_pack_ml / 1000.0) / v_formulation.batch_size) * v_ing_qty;
 
-        -- Resolve inventory item for this ingredient (4-tier)
         v_ing_inv_id := NULL;
-
-        -- Tier A: ingredient.product_id is an inventory_items.id directly
         IF v_ingredient.product_id IS NOT NULL THEN
           SELECT id INTO v_ing_inv_id FROM inventory_items WHERE id = v_ingredient.product_id;
-          -- Tier B: ingredient.product_id is a products.id → get its inventory_item_id
           IF v_ing_inv_id IS NULL THEN
             SELECT inventory_item_id INTO v_ing_inv_id FROM products WHERE id = v_ingredient.product_id;
           END IF;
         END IF;
 
-        -- Tier C: match by product_name (exact, then normalized, then fuzzy)
         IF v_ing_inv_id IS NULL AND v_ingredient.product_name IS NOT NULL AND btrim(v_ingredient.product_name) <> '' THEN
           SELECT id INTO v_ing_inv_id
           FROM inventory_items
           WHERE lower(btrim(name)) = lower(btrim(v_ingredient.product_name))
-          ORDER BY id ASC
-          LIMIT 1;
+          ORDER BY id ASC LIMIT 1;
 
           IF v_ing_inv_id IS NULL THEN
             v_norm_ing_name := normalize_inv_name(v_ingredient.product_name);
@@ -207,16 +261,14 @@ BEGIN
               SELECT id INTO v_ing_inv_id
               FROM inventory_items
               WHERE normalize_inv_name(name) = v_norm_ing_name
-              ORDER BY id ASC
-              LIMIT 1;
+              ORDER BY id ASC LIMIT 1;
 
               IF v_ing_inv_id IS NULL THEN
                 SELECT id INTO v_ing_inv_id
                 FROM inventory_items
                 WHERE normalize_inv_name(name) LIKE '%' || v_norm_ing_name || '%'
                    OR v_norm_ing_name LIKE '%' || normalize_inv_name(name) || '%'
-                ORDER BY length(name) DESC, id ASC
-                LIMIT 1;
+                ORDER BY length(name) DESC, id ASC LIMIT 1;
               END IF;
             END IF;
           END IF;
@@ -229,13 +281,11 @@ BEGIN
       END IF;
     END LOOP;
 
-    -- Deduct bottle regardless
     IF p_bottle_inventory_id IS NOT NULL THEN
       PERFORM consume_sales_inventory(p_order_id, p_bottle_inventory_id, p_quantity, 'Sale (Bottle)');
     END IF;
 
-    -- CRITICAL FALLBACK: If no formulation ingredients were found/deducted,
-    -- fall back to deducting the technical/product directly
+    -- CRITICAL FALLBACK: If 0 formulation ingredients were deducted, deduct technical directly
     IF v_formulation_deducted = 0 THEN
       v_inventory_id := resolve_sales_product_inventory(p_product_id, p_direct_inventory_id);
       IF v_inventory_id IS NOT NULL THEN
@@ -248,14 +298,13 @@ BEGIN
     RETURN NULL;
   END IF;
 
-  -- No formulation: deduct product technical directly
+  -- 2. Direct product (no formulation)
   v_inventory_id := resolve_sales_product_inventory(p_product_id, p_direct_inventory_id);
   IF v_inventory_id IS NOT NULL THEN
     v_calc_qty := p_quantity * (v_pack_ml / 1000.0);
     PERFORM consume_sales_inventory(p_order_id, v_inventory_id, v_calc_qty, 'Sale (Product)');
   END IF;
 
-  -- Deduct bottle
   IF p_bottle_inventory_id IS NOT NULL THEN
     PERFORM consume_sales_inventory(p_order_id, p_bottle_inventory_id, p_quantity, 'Sale (Bottle)');
   END IF;
@@ -264,18 +313,146 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- 5. Auto-link products to inventory_items by normalized name match
--- (only links products that have no inventory_item_id yet)
+-- 6. Ensure order placement and edit RPCs always pass resolved inventory item
+CREATE OR REPLACE FUNCTION place_sales_order_v2(
+  p_order_no VARCHAR, p_client_id INT, p_client_name VARCHAR, p_date VARCHAR,
+  p_due_date VARCHAR, p_status VARCHAR, p_total_amount DECIMAL, p_paid_amount DECIMAL,
+  p_discount DECIMAL, p_tax DECIMAL, p_notes TEXT, p_items JSONB
+) RETURNS INT AS $$
+DECLARE
+  v_order_id INT;
+  v_item JSONB;
+  v_product_id INT;
+  v_item_inv_id INT;
+  v_inventory_id INT;
+  v_bottle_inv_id INT;
+  v_qty DOUBLE PRECISION;
+  v_status_affects BOOLEAN := sales_order_affects_inventory(p_status);
+BEGIN
+  INSERT INTO orders (order_no, client_id, client_name, date, due_date, status, total_amount, paid_amount, discount, tax, notes)
+  VALUES (p_order_no, p_client_id, p_client_name, p_date, p_due_date, p_status, p_total_amount, p_paid_amount, p_discount, p_tax, p_notes)
+  RETURNING id INTO v_order_id;
+
+  FOR v_item IN SELECT * FROM jsonb_array_elements(p_items)
+  LOOP
+    v_product_id := NULLIF(v_item->>'product_id', '')::INT;
+    v_item_inv_id := NULLIF(v_item->>'inventory_item_id', '')::INT;
+    v_bottle_inv_id := NULLIF(v_item->>'bottle_inventory_id', '')::INT;
+    v_qty := coalesce((v_item->>'quantity')::DOUBLE PRECISION, 0);
+
+    v_inventory_id := resolve_sales_product_inventory(v_product_id, v_item_inv_id);
+
+    INSERT INTO order_items (
+      order_id, product_id, inventory_item_id, product_name, packing_size,
+      bottle_inventory_id, quantity, unit_price, discount, total
+    )
+    VALUES (
+      v_order_id,
+      v_product_id,
+      v_inventory_id,
+      coalesce(v_item->>'product_name', ''),
+      coalesce(v_item->>'packaging_size', v_item->>'packing_size'),
+      v_bottle_inv_id,
+      v_qty,
+      coalesce((v_item->>'unit_price')::DECIMAL, 0),
+      coalesce((v_item->>'discount')::DECIMAL, 0),
+      coalesce((v_item->>'total')::DECIMAL, 0)
+    );
+
+    IF v_status_affects AND v_qty > 0 THEN
+      PERFORM apply_sales_item_inventory(
+        v_order_id,
+        v_product_id,
+        v_qty,
+        coalesce(v_item->>'packaging_size', v_item->>'packing_size'),
+        v_bottle_inv_id,
+        v_inventory_id
+      );
+    END IF;
+  END LOOP;
+
+  RETURN v_order_id;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION update_sales_txn(
+  p_order_id INT, p_order_no VARCHAR, p_client_id INT, p_client_name VARCHAR, p_date VARCHAR,
+  p_due_date VARCHAR, p_status VARCHAR, p_total_amount DECIMAL, p_paid_amount DECIMAL,
+  p_discount DECIMAL, p_tax DECIMAL, p_notes TEXT, p_items JSONB
+) RETURNS VOID AS $$
+DECLARE
+  v_item JSONB;
+  v_product_id INT;
+  v_item_inv_id INT;
+  v_inventory_id INT;
+  v_bottle_inv_id INT;
+  v_qty DOUBLE PRECISION;
+  v_old_affects BOOLEAN;
+  v_new_affects BOOLEAN := sales_order_affects_inventory(p_status);
+BEGIN
+  SELECT sales_order_affects_inventory(status) INTO v_old_affects FROM orders WHERE id = p_order_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Sales order % does not exist', p_order_id; END IF;
+  IF v_old_affects THEN PERFORM revert_sales_stock(p_order_id); END IF;
+
+  DELETE FROM order_items WHERE order_id = p_order_id;
+  UPDATE orders SET
+    order_no = p_order_no,
+    client_id = p_client_id,
+    client_name = p_client_name,
+    date = p_date,
+    due_date = p_due_date,
+    status = p_status,
+    total_amount = p_total_amount,
+    paid_amount = p_paid_amount,
+    discount = p_discount,
+    tax = p_tax,
+    notes = p_notes
+  WHERE id = p_order_id;
+
+  FOR v_item IN SELECT * FROM jsonb_array_elements(p_items)
+  LOOP
+    v_product_id := NULLIF(v_item->>'product_id', '')::INT;
+    v_item_inv_id := NULLIF(v_item->>'inventory_item_id', '')::INT;
+    v_bottle_inv_id := NULLIF(v_item->>'bottle_inventory_id', '')::INT;
+    v_qty := coalesce((v_item->>'quantity')::DOUBLE PRECISION, 0);
+
+    v_inventory_id := resolve_sales_product_inventory(v_product_id, v_item_inv_id);
+
+    INSERT INTO order_items (
+      order_id, product_id, inventory_item_id, product_name, packing_size,
+      bottle_inventory_id, quantity, unit_price, discount, total
+    )
+    VALUES (
+      p_order_id,
+      v_product_id,
+      v_inventory_id,
+      coalesce(v_item->>'product_name', ''),
+      coalesce(v_item->>'packaging_size', v_item->>'packing_size'),
+      v_bottle_inv_id,
+      v_qty,
+      coalesce((v_item->>'unit_price')::DECIMAL, 0),
+      coalesce((v_item->>'discount')::DECIMAL, 0),
+      coalesce((v_item->>'total')::DECIMAL, 0)
+    );
+
+    IF v_new_affects AND v_qty > 0 THEN
+      PERFORM apply_sales_item_inventory(
+        p_order_id,
+        v_product_id,
+        v_qty,
+        coalesce(v_item->>'packaging_size', v_item->>'packing_size'),
+        v_bottle_inv_id,
+        v_inventory_id
+      );
+    END IF;
+  END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 7. One-time auto-link: link every product in products table to its resolved inventory item
 UPDATE products p
-SET inventory_item_id = (
-  SELECT i.id FROM inventory_items i
-  WHERE normalize_inv_name(i.name) = normalize_inv_name(p.name)
-  ORDER BY i.id ASC LIMIT 1
-)
+SET inventory_item_id = resolve_sales_product_inventory(p.id)
 WHERE p.inventory_item_id IS NULL
-  AND EXISTS (
-    SELECT 1 FROM inventory_items i
-    WHERE normalize_inv_name(i.name) = normalize_inv_name(p.name)
-  );
+  AND resolve_sales_product_inventory(p.id) IS NOT NULL;
 
 NOTIFY pgrst, 'reload_schema';

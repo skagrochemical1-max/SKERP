@@ -615,27 +615,15 @@ async function onProductSelectChange(idx, valOrEvt) {
   it.product_name = p?.name || '';
   it.inventory_item_id = p?.inventory_item_id || null;
 
-  // Fallback: If product has no linked inventory_item_id in DB, match against cachedTechnicalsList
+  // Auto-resolve inventory_item_id using robust chemical root/stem matching
   if (!it.inventory_item_id && cachedTechnicalsList.length > 0 && it.product_name) {
-    const normProd = String(it.product_name).toLowerCase().replace(/[^a-z0-9]/g, '');
-    const exactMatch = cachedTechnicalsList.find(t => String(t.name).toLowerCase().trim() === String(it.product_name).toLowerCase().trim());
-    if (exactMatch) {
-      it.inventory_item_id = exactMatch.id;
-    } else {
-      const normMatch = cachedTechnicalsList.find(t => {
-        const normT = String(t.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-        return normT === normProd;
-      });
-      if (normMatch) {
-        it.inventory_item_id = normMatch.id;
-      } else {
-        const fuzzyMatch = cachedTechnicalsList.find(t => {
-          const normT = String(t.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-          return normT.includes(normProd) || normProd.includes(normT);
-        });
-        if (fuzzyMatch) {
-          it.inventory_item_id = fuzzyMatch.id;
-        }
+    const matched = UTILS.matchProductToInventoryItem(it.product_name, cachedTechnicalsList);
+    if (matched) {
+      it.inventory_item_id = matched.id;
+      if (p) {
+        p.inventory_item_id = matched.id;
+        // Silently persist link to products table so it stays linked in database forever
+        window.dbClient.from('products').update({ inventory_item_id: matched.id }).eq('id', p.id).then(() => {});
       }
     }
   }
@@ -965,24 +953,28 @@ async function saveOrder() {
           item.packaging_size = product.unit || '1 L';
         }
 
-        const hasFormulation = formulationProductIds.has(String(product.id));
-        
-        if (!product.inventory_item_id && !hasFormulation) {
-          // Attempt auto-match by normalized name with inventory_items
-          const pNorm = normStr(product.name);
-          const match = invList.find(inv => {
-            const iNorm = normStr(inv.name);
-            return iNorm === pNorm || (pNorm.length > 3 && (iNorm.includes(pNorm) || pNorm.includes(iNorm)));
-          });
-
-          if (match) {
-            product.inventory_item_id = match.id;
-            item.inventory_item_id = match.id;
-            // Silently persist link to products table so it stays linked in database
-            window.dbClient.from('products').update({ inventory_item_id: match.id }).eq('id', product.id).then(() => {});
+        // Always resolve inventory_item_id so the order RPC has the direct technical ID
+        if (!item.inventory_item_id) {
+          if (product.inventory_item_id) {
+            item.inventory_item_id = product.inventory_item_id;
+          } else {
+            // First search technicals/others, then all inventory
+            const techInv = invList.filter(inv => {
+              const cat = String(inv.category || '').toLowerCase().trim();
+              return cat === 'technical' || cat === 'others';
+            });
+            const matched = UTILS.matchProductToInventoryItem(product.name, techInv.length ? techInv : invList);
+            if (matched) {
+              product.inventory_item_id = matched.id;
+              item.inventory_item_id = matched.id;
+              // Silently persist link to products table so it stays linked in database
+              window.dbClient.from('products').update({ inventory_item_id: matched.id }).eq('id', product.id).then(() => {});
+            }
           }
-        } else if (product.inventory_item_id) {
-          item.inventory_item_id = product.inventory_item_id;
+        } else if (!product.inventory_item_id) {
+          // If item has it, sync to product record
+          product.inventory_item_id = item.inventory_item_id;
+          window.dbClient.from('products').update({ inventory_item_id: item.inventory_item_id }).eq('id', product.id).then(() => {});
         }
       }
 
