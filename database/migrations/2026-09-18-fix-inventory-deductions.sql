@@ -266,7 +266,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- 5. Deduct inventory with guaranteed fallback to technical
+-- 5. Deduct inventory: Technical raw material & bottle packaging
+-- Note: The Formulations page is purely a recipe calculation and batch scaling tool; it does not track or affect inventory stock.
 CREATE OR REPLACE FUNCTION apply_sales_item_inventory(
   p_order_id INT,
   p_product_id INT,
@@ -277,107 +278,25 @@ CREATE OR REPLACE FUNCTION apply_sales_item_inventory(
 )
 RETURNS INT AS $$
 DECLARE
-  v_formulation RECORD;
-  v_ingredient RECORD;
   v_inventory_id INT;
-  v_ing_inv_id INT;
-  v_ing_qty DOUBLE PRECISION;
   v_calc_qty DOUBLE PRECISION;
   v_pack_ml DOUBLE PRECISION;
-  v_norm_ing_name TEXT;
-  v_formulation_deducted INT := 0;
 BEGIN
   IF p_quantity IS NULL OR p_quantity <= 0 THEN
     RETURN NULL;
   END IF;
 
   v_pack_ml := get_pack_size_ml(p_packaging_size);
+  v_calc_qty := p_quantity * (v_pack_ml / 1000.0);
 
-  -- 1. Check if product has a formulation
-  IF p_product_id IS NOT NULL THEN
-    SELECT * INTO v_formulation
-    FROM formulations
-    WHERE product_id = p_product_id AND batch_size > 0
-    ORDER BY id DESC LIMIT 1;
-  END IF;
-
-  IF v_formulation.id IS NOT NULL THEN
-    FOR v_ingredient IN
-      SELECT * FROM formulation_ingredients WHERE formulation_id = v_formulation.id
-    LOOP
-      v_ing_qty := coalesce(v_ingredient.quantity, 0);
-      IF v_ing_qty <= 0 AND coalesce(v_ingredient.percentage, 0) > 0 THEN
-        v_ing_qty := (v_formulation.batch_size * v_ingredient.percentage) / 100.0;
-      END IF;
-
-      IF v_ing_qty > 0 AND v_formulation.batch_size > 0 THEN
-        v_calc_qty := (p_quantity * (v_pack_ml / 1000.0) / v_formulation.batch_size) * v_ing_qty;
-
-        v_ing_inv_id := NULL;
-        IF v_ingredient.product_id IS NOT NULL THEN
-          SELECT id INTO v_ing_inv_id FROM inventory_items WHERE id = v_ingredient.product_id;
-          IF v_ing_inv_id IS NULL THEN
-            SELECT inventory_item_id INTO v_ing_inv_id FROM products WHERE id = v_ingredient.product_id;
-          END IF;
-        END IF;
-
-        IF v_ing_inv_id IS NULL AND v_ingredient.product_name IS NOT NULL AND btrim(v_ingredient.product_name) <> '' THEN
-          SELECT id INTO v_ing_inv_id
-          FROM inventory_items
-          WHERE lower(btrim(name)) = lower(btrim(v_ingredient.product_name))
-          ORDER BY id ASC LIMIT 1;
-
-          IF v_ing_inv_id IS NULL THEN
-            v_norm_ing_name := normalize_inv_name(v_ingredient.product_name);
-            IF v_norm_ing_name <> '' THEN
-              SELECT id INTO v_ing_inv_id
-              FROM inventory_items
-              WHERE normalize_inv_name(name) = v_norm_ing_name
-              ORDER BY id ASC LIMIT 1;
-
-              IF v_ing_inv_id IS NULL THEN
-                SELECT id INTO v_ing_inv_id
-                FROM inventory_items
-                WHERE normalize_inv_name(name) LIKE '%' || v_norm_ing_name || '%'
-                   OR v_norm_ing_name LIKE '%' || normalize_inv_name(name) || '%'
-                ORDER BY length(name) DESC, id ASC LIMIT 1;
-              END IF;
-            END IF;
-          END IF;
-        END IF;
-
-        IF v_ing_inv_id IS NOT NULL AND v_calc_qty > 0 THEN
-          PERFORM consume_sales_inventory(p_order_id, v_ing_inv_id, v_calc_qty, 'Sale (Formulation)');
-          v_formulation_deducted := v_formulation_deducted + 1;
-        END IF;
-      END IF;
-    END LOOP;
-
-    IF p_bottle_inventory_id IS NOT NULL THEN
-      PERFORM consume_sales_inventory(p_order_id, p_bottle_inventory_id, p_quantity, 'Sale (Bottle)');
-    END IF;
-
-    -- CRITICAL FALLBACK: If 0 formulation ingredients were deducted, deduct technical directly
-    IF v_formulation_deducted = 0 THEN
-      v_inventory_id := resolve_sales_product_inventory(p_product_id, p_direct_inventory_id);
-      IF v_inventory_id IS NOT NULL THEN
-        v_calc_qty := p_quantity * (v_pack_ml / 1000.0);
-        PERFORM consume_sales_inventory(p_order_id, v_inventory_id, v_calc_qty, 'Sale (Technical Fallback)');
-        RETURN v_inventory_id;
-      END IF;
-    END IF;
-
-    RETURN NULL;
-  END IF;
-
-  -- 2. Direct product (no formulation)
+  -- 1. Deduct technical raw material directly
   v_inventory_id := resolve_sales_product_inventory(p_product_id, p_direct_inventory_id);
-  IF v_inventory_id IS NOT NULL THEN
-    v_calc_qty := p_quantity * (v_pack_ml / 1000.0);
-    PERFORM consume_sales_inventory(p_order_id, v_inventory_id, v_calc_qty, 'Sale (Product)');
+  IF v_inventory_id IS NOT NULL AND v_calc_qty > 0 THEN
+    PERFORM consume_sales_inventory(p_order_id, v_inventory_id, v_calc_qty, 'Sale (Technical)');
   END IF;
 
-  IF p_bottle_inventory_id IS NOT NULL THEN
+  -- 2. Deduct bottle packaging directly
+  IF p_bottle_inventory_id IS NOT NULL AND p_quantity > 0 THEN
     PERFORM consume_sales_inventory(p_order_id, p_bottle_inventory_id, p_quantity, 'Sale (Bottle)');
   END IF;
 

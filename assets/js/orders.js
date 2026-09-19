@@ -920,18 +920,6 @@ async function saveOrder() {
         }
       });
 
-      let formulationProductIds = new Set();
-      try {
-        const prodIds = orderItems.map(item => item.product_id).filter(Boolean);
-        if (prodIds.length > 0) {
-          const { data: formulationRows } = await window.dbClient
-            .from('formulations').select('product_id').in('product_id', prodIds);
-          formulationProductIds = new Set((formulationRows || []).map(row => String(row.product_id)));
-        }
-      } catch (fErr) {
-        console.warn('Formulation lookup notice:', fErr);
-      }
-
       // Fetch latest inventory items for auto-matching fallback
       let invList = [];
       try {
