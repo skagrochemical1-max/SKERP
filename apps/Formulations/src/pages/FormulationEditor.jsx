@@ -155,45 +155,20 @@ const FormulationEditor = () => {
     return products.filter(p => p.name && p.name.toLowerCase().includes(query));
   }, [products, formulation.name]);
 
-  // Combined inventory raw materials and products for ingredient autocomplete
-  const allAvailableIngredients = useMemo(() => {
-    const map = new Map();
-    (inventoryItems || []).forEach(item => {
-      if (item.name) {
-        map.set(item.name.toLowerCase().trim(), {
-          id: item.id,
-          name: item.name,
-          category: item.category || 'Raw Material',
-          unit: item.unit || 'L'
-        });
-      }
-    });
-    (products || []).forEach(prod => {
-      if (prod.name && !map.has(prod.name.toLowerCase().trim())) {
-        map.set(prod.name.toLowerCase().trim(), {
-          id: prod.id,
-          name: prod.name,
-          category: prod.category || 'Product',
-          unit: prod.unit || 'L'
-        });
-      }
-    });
-    return Array.from(map.values());
-  }, [inventoryItems, products]);
-
+  // Filter products for ingredient name autocomplete (exact same logic as Finished Good Product)
   const getFilteredIngredients = (ingredientName) => {
     const query = (ingredientName || '').toLowerCase().trim();
-    if (!query) return allAvailableIngredients.slice(0, 40);
-    return allAvailableIngredients.filter(item => item.name && item.name.toLowerCase().includes(query)).slice(0, 40);
+    const source = products || [];
+    if (!query) return source;
+    return source.filter(p => p.name && p.name.toLowerCase().includes(query));
   };
 
-  const handleSelectIngredient = (index, item) => {
+  const handleSelectIngredient = (index, p) => {
     const newIngredients = [...formulation.ingredients];
     newIngredients[index] = {
       ...newIngredients[index],
-      productId: String(item.id),
-      name: item.name,
-      unit: item.unit || newIngredients[index].unit || formulation.baseUnit || 'L'
+      productId: String(p.id),
+      name: p.name
     };
     setFormulation({ ...formulation, ingredients: newIngredients });
     setActiveIngredientIndex(null);
@@ -448,7 +423,7 @@ const FormulationEditor = () => {
                 </div>
               </div>
 
-              <div style={{ overflowX: 'auto', minHeight: activeIngredientIndex !== null ? '360px' : 'auto', paddingBottom: activeIngredientIndex !== null ? '120px' : '16px' }}>
+              <div style={{ overflowX: 'auto' }}>
                 <table className="line-items-table">
                   <thead>
                     <tr>
@@ -476,9 +451,9 @@ const FormulationEditor = () => {
                             onBlur={() => {
                               setTimeout(() => {
                                 setActiveIngredientIndex(prev => (prev === index ? null : prev));
-                              }, 250);
+                              }, 200);
                             }}
-                            placeholder="Type chemical ingredient or select..."
+                            placeholder="Type chemical ingredient..."
                             className="form-input"
                             style={{ width: '100%' }}
                           />
@@ -491,7 +466,6 @@ const FormulationEditor = () => {
                                 top: '100%',
                                 left: 0,
                                 right: 0,
-                                minWidth: '240px',
                                 backgroundColor: 'var(--surface)',
                                 border: '1px solid var(--border)',
                                 borderRadius: 'var(--radius-sm)',
@@ -502,34 +476,26 @@ const FormulationEditor = () => {
                                 boxShadow: 'var(--shadow)'
                               }}
                             >
-                              {getFilteredIngredients(ingredient.name).map(item => (
+                              {getFilteredIngredients(ingredient.name).map(p => (
                                 <div
-                                  key={item.id + '_' + item.name}
-                                  onMouseDown={() => handleSelectIngredient(index, item)}
+                                  key={p.id}
+                                  onMouseDown={() => handleSelectIngredient(index, p)}
                                   style={{
                                     padding: '10px 14px',
                                     cursor: 'pointer',
                                     borderBottom: '1px solid var(--border)',
                                     fontSize: '13px',
-                                    color: 'var(--text-primary)',
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center'
+                                    color: 'var(--text-primary)'
                                   }}
-                                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.1)'}
-                                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                  onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(0,0,0,0.1)'}
+                                  onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
                                 >
-                                  <span>{item.name}</span>
-                                  {item.category && (
-                                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)', marginLeft: '8px' }}>
-                                      {item.category}
-                                    </span>
-                                  )}
+                                  {p.name}
                                 </div>
                               ))}
                               {getFilteredIngredients(ingredient.name).length === 0 && (
                                 <div style={{ padding: '10px 14px', fontSize: '12px', color: 'var(--text-secondary)' }}>
-                                  No matching item. (Will save as custom ingredient)
+                                  No matching catalog product. (Will save as custom ingredient)
                                 </div>
                               )}
                             </div>
