@@ -81,6 +81,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
+-- Drop any previous overloaded signatures to avoid ambiguity
+DROP FUNCTION IF EXISTS resolve_sales_product_inventory(INT);
+DROP FUNCTION IF EXISTS resolve_sales_product_inventory(INT, INT);
+
 -- 4. 7-Tier resolution: Product -> inventory_items ID
 CREATE OR REPLACE FUNCTION resolve_sales_product_inventory(
   p_product_id INT,
@@ -451,8 +455,8 @@ $$ LANGUAGE plpgsql;
 
 -- 7. One-time auto-link: link every product in products table to its resolved inventory item
 UPDATE products p
-SET inventory_item_id = resolve_sales_product_inventory(p.id)
+SET inventory_item_id = resolve_sales_product_inventory(p.id, NULL::INT)
 WHERE p.inventory_item_id IS NULL
-  AND resolve_sales_product_inventory(p.id) IS NOT NULL;
+  AND resolve_sales_product_inventory(p.id, NULL::INT) IS NOT NULL;
 
 NOTIFY pgrst, 'reload_schema';
