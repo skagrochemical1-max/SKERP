@@ -14,7 +14,7 @@ import {
 const FormulationEditor = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { getFormulation, addFormulation, updateFormulation, products } = useFormulations();
+  const { getFormulation, addFormulation, updateFormulation, products, inventoryItems } = useFormulations();
   const errorRef = useRef(null);
 
   const [formulation, setFormulation] = useState({
@@ -31,6 +31,7 @@ const FormulationEditor = () => {
 
   const [errors, setErrors] = useState([]);
   const [searchFocused, setSearchFocused] = useState(false);
+  const [activeIngredientIndex, setActiveIngredientIndex] = useState(null);
 
   useEffect(() => {
     const resetScroll = () => {
@@ -153,6 +154,50 @@ const FormulationEditor = () => {
     if (!query) return products;
     return products.filter(p => p.name && p.name.toLowerCase().includes(query));
   }, [products, formulation.name]);
+
+  // Combined inventory raw materials and products for ingredient autocomplete
+  const allAvailableIngredients = useMemo(() => {
+    const map = new Map();
+    (inventoryItems || []).forEach(item => {
+      if (item.name) {
+        map.set(item.name.toLowerCase().trim(), {
+          id: item.id,
+          name: item.name,
+          category: item.category || 'Raw Material',
+          unit: item.unit || 'L'
+        });
+      }
+    });
+    (products || []).forEach(prod => {
+      if (prod.name && !map.has(prod.name.toLowerCase().trim())) {
+        map.set(prod.name.toLowerCase().trim(), {
+          id: prod.id,
+          name: prod.name,
+          category: prod.category || 'Product',
+          unit: prod.unit || 'L'
+        });
+      }
+    });
+    return Array.from(map.values());
+  }, [inventoryItems, products]);
+
+  const getFilteredIngredients = (ingredientName) => {
+    const query = (ingredientName || '').toLowerCase().trim();
+    if (!query) return allAvailableIngredients.slice(0, 40);
+    return allAvailableIngredients.filter(item => item.name && item.name.toLowerCase().includes(query)).slice(0, 40);
+  };
+
+  const handleSelectIngredient = (index, item) => {
+    const newIngredients = [...formulation.ingredients];
+    newIngredients[index] = {
+      ...newIngredients[index],
+      productId: String(item.id),
+      name: item.name,
+      unit: item.unit || newIngredients[index].unit || formulation.baseUnit || 'L'
+    };
+    setFormulation({ ...formulation, ingredients: newIngredients });
+    setActiveIngredientIndex(null);
+  };
 
   // Handle typing normalization with cursor preservation
   const handleProductNameChange = (e) => {
@@ -403,7 +448,7 @@ const FormulationEditor = () => {
                 </div>
               </div>
 
-              <div style={{ overflowX: 'auto' }}>
+              <div style={{ overflowX: 'auto', minHeight: activeIngredientIndex !== null ? '360px' : 'auto', paddingBottom: activeIngredientIndex !== null ? '120px' : '16px' }}>
                 <table className="line-items-table">
                   <thead>
                     <tr>
@@ -418,16 +463,77 @@ const FormulationEditor = () => {
                   <tbody>
                     {formulation.ingredients.map((ingredient, index) => (
                       <tr key={index}>
-                        <td>
+                        <td style={{ position: 'relative' }}>
                           <span className="mobile-label">Ingredient Name</span>
                           <input
                             type="text"
                             value={ingredient.name}
-                            onChange={(e) => handleIngredientNameChange(index, e)}
-                            placeholder="Type chemical ingredient..."
+                            onChange={(e) => {
+                              handleIngredientNameChange(index, e);
+                              setActiveIngredientIndex(index);
+                            }}
+                            onFocus={() => setActiveIngredientIndex(index)}
+                            onBlur={() => {
+                              setTimeout(() => {
+                                setActiveIngredientIndex(prev => (prev === index ? null : prev));
+                              }, 250);
+                            }}
+                            placeholder="Type chemical ingredient or select..."
                             className="form-input"
                             style={{ width: '100%' }}
                           />
+
+                          {/* Autocomplete list */}
+                          {activeIngredientIndex === index && (
+                            <div
+                              style={{
+                                position: 'absolute',
+                                top: '100%',
+                                left: 0,
+                                right: 0,
+                                minWidth: '240px',
+                                backgroundColor: 'var(--surface)',
+                                border: '1px solid var(--border)',
+                                borderRadius: 'var(--radius-sm)',
+                                maxHeight: '200px',
+                                overflowY: 'auto',
+                                zIndex: 100,
+                                marginTop: '4px',
+                                boxShadow: 'var(--shadow)'
+                              }}
+                            >
+                              {getFilteredIngredients(ingredient.name).map(item => (
+                                <div
+                                  key={item.id + '_' + item.name}
+                                  onMouseDown={() => handleSelectIngredient(index, item)}
+                                  style={{
+                                    padding: '10px 14px',
+                                    cursor: 'pointer',
+                                    borderBottom: '1px solid var(--border)',
+                                    fontSize: '13px',
+                                    color: 'var(--text-primary)',
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center'
+                                  }}
+                                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.1)'}
+                                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                >
+                                  <span>{item.name}</span>
+                                  {item.category && (
+                                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)', marginLeft: '8px' }}>
+                                      {item.category}
+                                    </span>
+                                  )}
+                                </div>
+                              ))}
+                              {getFilteredIngredients(ingredient.name).length === 0 && (
+                                <div style={{ padding: '10px 14px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                                  No matching item. (Will save as custom ingredient)
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </td>
                         <td>
                           <span className="mobile-label">Percentage (%)</span>
