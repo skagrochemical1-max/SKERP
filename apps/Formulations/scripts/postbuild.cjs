@@ -17,7 +17,14 @@ if (fs.existsSync(srcHtml)) {
   html = html.replace(/src="\.\/assets\//g, 'src="../assets/formulations-build/');
   html = html.replace(/href="\/assets\//g, 'href="../assets/formulations-build/');
   html = html.replace(/src="\/assets\//g, 'src="../assets/formulations-build/');
-  
+  // Ensure Supabase bridge and interceptor are present before scripts
+  if (!html.includes('react-interceptor.js')) {
+    html = html.replace(
+      '<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>',
+      '<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>\n    <script src="../assets/js/database.js?v=1789805900000"></script>\n    <script src="../assets/js/react-interceptor.js?v=1789805900000"></script>'
+    );
+  }
+
   // Inject standard ERP CSS styles into head so layout/sidebar and grids render correctly
   const stylesheetInjection = `
     <link rel="stylesheet" href="../assets/css/style.css?v=41">
