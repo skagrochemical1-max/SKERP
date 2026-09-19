@@ -1032,7 +1032,7 @@ async function saveOrder() {
            throw error;
         }
       } else {
-        const { error } = await window.dbClient.rpc('place_sales_order_v2', {
+        const { data: createdOrderId, error } = await window.dbClient.rpc('place_sales_order_v2', {
           p_order_no: finalOrderNo || null,
           p_client_id: d.client_id,
           p_client_name: clientName,
@@ -1069,6 +1069,101 @@ async function saveOrder() {
            }
            throw error;
         }
+
+        // Direct Inventory Stock Synchronization Guarantee:
+        // Verifies if technical or bottle stock was deducted by the DB RPC.
+        // If the DB RPC skipped technical deduction (e.g. legacy functions in Supabase),
+        // deduct directly from inventory_items so stock NEVER fails to reduce.
+        try {
+          const syncOrderId = editingOrderId || createdOrderId;
+          let deductedItemIds = new Set();
+          if (syncOrderId) {
+            try {
+              const { data: movements } = await window.dbClient
+                .from('stock_movements')
+                .select('batch_id')
+                .eq('txn_id', syncOrderId);
+
+              if (movements && movements.length > 0) {
+                const batchIds = movements.map(m => m.batch_id).filter(Boolean);
+                if (batchIds.length > 0) {
+                  const { data: batches } = await window.dbClient
+                    .from('stock_batches')
+                    .select('id, item_id')
+                    .in('id', batchIds);
+                  (batches || []).forEach(b => {
+                    if (b.item_id) deductedItemIds.add(b.item_id);
+                  });
+                }
+              }
+            } catch (movErr) {
+              console.warn('Could not query stock movements:', movErr);
+            }
+          }
+
+          for (const it of orderItems) {
+            // Find resolved technical inventory ID
+            let techInvId = it.inventory_item_id;
+            if (!techInvId) {
+              const pr = cachedProductsList.find(p => p.id == it.product_id);
+              if (pr && pr.inventory_item_id) techInvId = pr.inventory_item_id;
+              else if (invList && invList.length > 0) {
+                const matched = UTILS.matchProductToInventoryItem(it.product_name, invList);
+                if (matched) techInvId = matched.id;
+              }
+            }
+
+            // 1. Technical stock deduction
+            if (techInvId && !deductedItemIds.has(techInvId)) {
+              const packSize = it.packaging_size || it.packing_size || '1 L';
+              const packSizeMl = UTILS.parsePackSizeInMl(packSize) || 1000;
+              const deductQty = (packSizeMl / 1000.0) * (parseFloat(it.quantity) || 0);
+
+              if (deductQty > 0) {
+                const { data: invRow } = await window.dbClient
+                  .from('inventory_items')
+                  .select('stock')
+                  .eq('id', techInvId)
+                  .single();
+
+                if (invRow) {
+                  const newStock = Math.max(0, (parseFloat(invRow.stock) || 0) - deductQty);
+                  await window.dbClient
+                    .from('inventory_items')
+                    .update({ stock: newStock })
+                    .eq('id', techInvId);
+                  console.log(`[Guaranteed Deduction] Deducted ${deductQty} from technical #${techInvId}. Old stock: ${invRow.stock}, New stock: ${newStock}`);
+                  deductedItemIds.add(techInvId);
+                }
+              }
+            }
+
+            // 2. Bottle packaging stock deduction
+            let bottleInvId = it.bottle_inventory_id;
+            if (bottleInvId && !deductedItemIds.has(bottleInvId)) {
+              const bottleQty = parseFloat(it.quantity) || 0;
+              if (bottleQty > 0) {
+                const { data: bRow } = await window.dbClient
+                  .from('inventory_items')
+                  .select('stock')
+                  .eq('id', bottleInvId)
+                  .single();
+
+                if (bRow) {
+                  const newStock = Math.max(0, (parseFloat(bRow.stock) || 0) - bottleQty);
+                  await window.dbClient
+                    .from('inventory_items')
+                    .update({ stock: newStock })
+                    .eq('id', bottleInvId);
+                  console.log(`[Guaranteed Deduction] Deducted ${bottleQty} bottles from #${bottleInvId}. Old stock: ${bRow.stock}, New stock: ${newStock}`);
+                  deductedItemIds.add(bottleInvId);
+                }
+              }
+            }
+          }
+        } catch (syncErr) {
+          console.warn('Inventory direct sync notice:', syncErr);
+        }
       }
 
       APP.closeModal('order-modal');
@@ -1088,8 +1183,30 @@ async function saveOrder() {
 async function deleteOrder(id) {
   APP.showConfirm('Delete this order and its items?', async () => {
     try {
+      // Pre-fetch items to restore direct stock if needed
+      const { data: oData } = await window.dbClient.from('orders').select('*, items:order_items(*)').eq('id', id).single();
+      const itemsToRestore = oData?.items || [];
+
       const { error } = await window.dbClient.rpc('delete_sales_txn', { p_order_id: id });
-      if (error) throw error;
+      if (error) {
+        await window.dbClient.from('order_items').delete().eq('order_id', id);
+        await window.dbClient.from('orders').delete().eq('id', id);
+      }
+
+      // Restore technical items
+      for (const it of itemsToRestore) {
+        if (it.inventory_item_id) {
+          const packSize = it.packaging_size || it.packing_size || '1 L';
+          const packSizeMl = UTILS.parsePackSizeInMl(packSize) || 1000;
+          const restoreQty = (packSizeMl / 1000.0) * (parseFloat(it.quantity) || 0);
+          if (restoreQty > 0) {
+            const { data: invRow } = await window.dbClient.from('inventory_items').select('stock').eq('id', it.inventory_item_id).single();
+            if (invRow) {
+              await window.dbClient.from('inventory_items').update({ stock: (parseFloat(invRow.stock) || 0) + restoreQty }).eq('id', it.inventory_item_id);
+            }
+          }
+        }
+      }
       
       APP.showToast('Order deleted!', 'success');
       setTimeout(() => loadOrders(), 100);

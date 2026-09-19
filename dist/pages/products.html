@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>S K ERP - Products</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="manifest" href="/assets/manifest-6-FF41n4.json?v=1788872545871">
   <meta name="theme-color" content="#10B981">
@@ -116,6 +116,11 @@
             </div>
             <div class="form-grid product-form-grid">
               <div class="form-group"><label class="form-label">Batch No</label><input class="form-input" name="batch_no" placeholder="e.g. B2026-001"></div>
+              <div class="form-group"><label class="form-label">Linked Technical Stock (Inventory)</label>
+                <select class="form-select" name="inventory_item_id" id="product-tech-select">
+                  <option value="">Auto-match by name</option>
+                </select>
+              </div>
               <div class="form-group form-col-full"><label class="form-label">Technical Composition</label><input class="form-input" name="composition" placeholder="e.g. Chlorpyrifos 20%"></div>
               <div class="form-group form-col-full"><label class="form-label">Description</label><textarea class="form-textarea" name="description" rows="2" placeholder="Product description..."></textarea></div>
             </div>
